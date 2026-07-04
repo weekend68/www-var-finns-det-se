@@ -176,7 +176,7 @@ def send_email(newly_available):
     )
 
     payload = json.dumps({
-        "from": "apoteksvakt@resend.dev",
+        "from": os.getenv("FROM_EMAIL", "apoteksvakt@resend.dev"),
         "to": [notify],
         "subject": "🟢 Estradiol i lager på apotek!",
         "text": body,
