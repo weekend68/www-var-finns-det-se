@@ -373,7 +373,12 @@ def render_html():
 
     og_image = f"{SITE_URL}/og-image.svg" if SITE_URL else ""
     canonical = SITE_URL or ""
-    desc = "Realtidsövervakning av lagerstatusen för estradiolpreparat på svenska apotek. Uppdateras automatiskt."
+    desc = f"Realtidsövervakning av lagerstatus för {len(PRODUCTS)} utvalda läkemedel på ~861 apotek runt om i Sverige. Uppdateras automatiskt."
+    poll_min = POLL_INTERVAL // 60
+    if SITE_NAME.endswith(".se"):
+        name_base, name_tld = SITE_NAME[:-3], ".se"
+    else:
+        name_base, name_tld = SITE_NAME, ""
 
     return f"""<!DOCTYPE html>
 <html lang="sv">
@@ -400,11 +405,35 @@ def render_html():
   {f'<meta name="twitter:image"      content="{og_image}">' if og_image else ""}
   <style>
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-    body {{ font-family: system-ui, sans-serif; background: #f5f5f5; color: #222;
-            padding: 1.5rem; min-height: 100vh; display: flex; flex-direction: column; }}
-    main {{ flex: 1; }}
-    h1 {{ font-size: 1.4rem; margin-bottom: 0.25rem; }}
-    .subtitle {{ color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; }}
+    body {{ font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
+            min-height: 100vh; display: flex; flex-direction: column; }}
+    /* --- hero header --- */
+    .hero {{
+      background: #0D1B2A;
+      background-image: radial-gradient(#1E3A52 1px, transparent 1px);
+      background-size: 40px 40px;
+      border-left: 5px solid #22D3A5;
+      padding: 2rem 1.5rem 1.75rem;
+      position: relative;
+    }}
+    .hero-inner {{ max-width: 720px; }}
+    .hero-brand {{ display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }}
+    .hero-pill {{ flex-shrink: 0; }}
+    .hero-name {{ font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }}
+    .hero-name-main {{ color: #EEF4F8; }}
+    .hero-name-tld  {{ color: #22D3A5; }}
+    .hero-tagline {{ color: #6B8CA6; font-size: 0.8rem; letter-spacing: 0.06em;
+                     text-transform: uppercase; margin-bottom: 0.9rem; }}
+    .hero-desc {{ color: #8CAFC7; font-size: 0.875rem; line-height: 1.65; max-width: 560px; }}
+    .hero-desc a {{ color: #22D3A5; text-decoration: none; }}
+    .live-badge {{ position: absolute; top: 1.25rem; right: 1.5rem;
+                   display: flex; align-items: center; gap: 0.4rem;
+                   color: #3D6480; font-size: 0.7rem; letter-spacing: .12em; }}
+    .live-dot {{ width: 7px; height: 7px; border-radius: 50%; background: #22D3A5;
+                 animation: pulse 2s infinite; }}
+    @keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.3; }} }}
+    /* --- main content --- */
+    main {{ flex: 1; padding: 1.5rem; }}
     .meta {{ font-size: 0.8rem; color: #888; margin-bottom: 1.25rem; }}
     .stale {{ font-size: 0.75rem; color: #aaa; font-weight: normal; }}
     .card {{ background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
@@ -422,15 +451,40 @@ def render_html():
     details summary::before {{ content: "▸ "; }}
     details[open] summary::before {{ content: "▾ "; }}
     .waiting {{ color: #888; font-style: italic; padding: 2rem 0; }}
-    footer {{ max-width: 720px; margin-top: 2.5rem; padding-top: 1rem;
-              border-top: 1px solid #e0e0e0; font-size: 0.75rem; color: #999; line-height: 1.6; }}
+    footer {{ max-width: 720px; margin: 2rem auto 0; padding: 1rem 1.5rem 1.5rem;
+              font-size: 0.75rem; color: #999; line-height: 1.6;
+              border-top: 1px solid #e0e0e0; }}
     footer a {{ color: #999; }}
   </style>
 </head>
 <body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-brand">
+        <svg class="hero-pill" width="36" height="16" viewBox="0 0 36 16" aria-hidden="true">
+          <rect x="0" y="0" width="36" height="16" rx="8" fill="none" stroke="#22D3A5" stroke-width="1.5"/>
+          <line x1="18" y1="0" x2="18" y2="16" stroke="#22D3A5" stroke-width="1.5"/>
+          <clipPath id="pill-lh"><rect x="0" y="0" width="18" height="16"/></clipPath>
+          <rect x="0" y="0" width="36" height="16" rx="8" fill="#22D3A5" clip-path="url(#pill-lh)"/>
+        </svg>
+        <span class="hero-name">
+          <span class="hero-name-main">{name_base}</span><span class="hero-name-tld">{name_tld}</span>
+        </span>
+      </div>
+      <p class="hero-tagline">Lagerstatus för läkemedel på apotek i Sverige</p>
+      <p class="hero-desc">
+        Sidan bevakar lagerstatus för {len(PRODUCTS)} utvalda läkemedel
+        på ~861 apotek runt om i Sverige. Informationen hämtas direkt från
+        <a href="https://fass.se" target="_blank" rel="noopener">Fass.se</a>
+        och uppdateras automatiskt var {poll_min}. minut.
+        Du kan prenumerera på e-postaviseringar när ett läkemedel återfås i lager.
+      </p>
+    </div>
+    <div class="live-badge" aria-label="Live">
+      <span class="live-dot"></span>LIVE
+    </div>
+  </header>
   <main>
-    <h1>💊 {SITE_NAME}</h1>
-    <p class="subtitle">~861 apotek · {len(PRODUCTS)} läkemedel</p>
     {body}
   </main>
   <footer>
