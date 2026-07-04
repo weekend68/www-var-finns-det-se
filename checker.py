@@ -188,10 +188,13 @@ def polling_loop(pharmacy_map):
                 updated_products.append({**product, "pharmacies": [], "error": str(e)})
 
         if newly_available:
-            try:
-                send_email(newly_available)
-            except Exception as e:
-                print(f"  Mailfel: {e}")
+            if os.getenv("RESEND_API_KEY"):
+                try:
+                    send_email(newly_available)
+                except Exception as e:
+                    print(f"  Mailfel: {e}")
+            else:
+                print("  Mail hoppas över (RESEND_API_KEY saknas)")
 
         elapsed = time.time() - t0
         sleep_time = max(0, POLL_INTERVAL - elapsed)
@@ -259,10 +262,12 @@ def render_html():
                 f"</div>"
             )
 
+        email_status = "✉️ Mail aktiverat" if os.getenv("RESEND_API_KEY") else "⚠️ Mail ej konfigurerat (RESEND_API_KEY saknas)"
         meta = (
             f"<p class='meta'>Senaste koll: {snap['last_check']} · "
             f"Nästa: {snap['next_check']} · "
-            f"Antal körningar: {snap['polls_done']}</p>"
+            f"Antal körningar: {snap['polls_done']} · "
+            f"{email_status}</p>"
         )
         body = meta + "\n".join(cards)
 
@@ -322,9 +327,10 @@ def start_web_server():
 # --- MAIN ---
 
 def main():
-    for var in ("NOTIFY_EMAIL", "RESEND_API_KEY"):
-        if not os.getenv(var):
-            raise SystemExit(f"Saknar miljövariabel: {var}")
+    if not os.getenv("NOTIFY_EMAIL"):
+        raise SystemExit("Saknar miljövariabel: NOTIFY_EMAIL")
+    if not os.getenv("RESEND_API_KEY"):
+        print("OBS: RESEND_API_KEY saknas — statussida fungerar men inga mail skickas")
 
     # Start web server immediately so Railway sees a live port
     web_thread = threading.Thread(target=start_web_server, daemon=True)
