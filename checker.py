@@ -191,7 +191,17 @@ def check_product_stock(npl_pack_id, gln_codes, pharmacy_map):
             data = fass_post(f"pharmacy/stock/{npl_pack_id}", batch)
             results.extend(data)
         except Exception as e:
-            print(f"  Batchfel (offset {i}): {e}")
+            if getattr(e, "code", None) == 400:
+                # Batch contains GLN codes unknown to Fass — retry in sub-batches of 10
+                for j in range(0, len(batch), 10):
+                    sub = batch[j:j + 10]
+                    try:
+                        results.extend(fass_post(f"pharmacy/stock/{npl_pack_id}", sub))
+                    except Exception:
+                        pass
+                    time.sleep(0.1)
+            else:
+                print(f"  Batchfel (offset {i}): {e}")
         time.sleep(0.2)
 
     in_stock = []
