@@ -357,7 +357,7 @@ def render_html():
 </head>
 <body>
   <h1>💊 Apoteksvakt — lagerstatus</h1>
-  <p class="subtitle">Sidan laddas om var 60:e sekund · ~861 apotek i Sverige · {len(PRODUCTS)} läkemedel</p>
+  <p class="subtitle">~861 apotek · {len(PRODUCTS)} läkemedel</p>
   {body}
 </body>
 </html>"""
@@ -399,7 +399,7 @@ def main():
 
     print(f"Hämtar apotekslista ({len(CITIES)} städer)...")
     with state_lock:
-        state["status"] = f"Startar — hämtar apotekslista ({len(CITIES)} städer)..."
+        state["status"] = "Startar — hämtar apotekslista..."
     pharmacy_map = fetch_all_pharmacies()
     print(f"Hittade {len(pharmacy_map)} unika apotek i Sverige")
     print(f"Pollar var {POLL_INTERVAL // 60} minut(er)\n")
