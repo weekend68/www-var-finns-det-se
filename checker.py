@@ -19,6 +19,7 @@ import json
 import os
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -252,9 +253,13 @@ def send_email(newly_available):
             "Content-Type": "application/json",
         },
     )
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        result = json.loads(resp.read())
-    print(f"  Mail skickat till {notify} (id: {result.get('id')})")
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read())
+        print(f"  Mail skickat till {notify} (id: {result.get('id')})")
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")
+        raise RuntimeError(f"Resend {e.code}: {body}") from e
 
 
 # --- POLLING LOOP ---
