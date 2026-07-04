@@ -10,6 +10,9 @@ Optional:
   PORT              — HTTP port for status page (default: 8080)
   POLL_INTERVAL     — minutes between checks (default: 2)
   CACHE_FILE        — path for persistent state cache (default: /tmp/medicinstatus_cache.json)
+  SITE_URL          — public URL, used for og:url and og:image (e.g. https://medicinstatus.se)
+  SITE_NAME         — site name shown in header (default: medicinstatus.se)
+  FROM_EMAIL        — sender address for Resend (default: apoteksvakt@resend.dev)
 """
 
 import json
@@ -30,6 +33,47 @@ FASS_REFERER = "https://fass.se/health/product/20011130000246/stock-status"
 IN_STOCK_STATUSES = {"IN_STOCK", "FEW_IN_STOCK"}
 SHOW_LIMIT = 10  # pharmacies shown before "Visa alla"-button
 SITE_NAME = os.getenv("SITE_NAME", "medicinstatus.se")
+SITE_URL  = os.getenv("SITE_URL", "").rstrip("/")
+
+OG_IMAGE_SVG = """<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,-apple-system,'Helvetica Neue',sans-serif">
+  <defs>
+    <pattern id="dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="20" cy="20" r="1" fill="#1E3A52" opacity="0.8"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="#0D1B2A"/>
+  <rect width="1200" height="630" fill="url(#dots)"/>
+  <rect x="0" y="0" width="5" height="630" fill="#22D3A5"/>
+  <g transform="translate(110, 200)">
+    <rect x="0" y="0" width="160" height="70" rx="35" fill="none" stroke="#22D3A5" stroke-width="4"/>
+    <line x1="80" y1="0" x2="80" y2="70" stroke="#22D3A5" stroke-width="4"/>
+    <clipPath id="lh"><rect x="0" y="0" width="80" height="70"/></clipPath>
+    <rect x="0" y="0" width="160" height="70" rx="35" fill="#22D3A5" clip-path="url(#lh)"/>
+  </g>
+  <text x="110" y="352" font-size="88" font-weight="700" letter-spacing="-2">
+    <tspan fill="#EEF4F8">medicinstatus</tspan><tspan fill="#22D3A5">.se</tspan>
+  </text>
+  <text x="112" y="408" font-size="28" font-weight="400" fill="#6B8CA6">Lagerstatus för läkemedel på apotek i Sverige</text>
+  <g transform="translate(110, 460)">
+    <rect x="0" y="0" width="980" height="6" rx="3" fill="#162A3E"/>
+    <rect x="0" y="0" width="90" height="6" rx="3" fill="#22D3A5"/>
+    <rect x="100" y="0" width="60" height="6" fill="#22D3A5"/>
+    <rect x="170" y="0" width="40" height="6" fill="#22D3A5" opacity="0.6"/>
+    <rect x="220" y="0" width="20" height="6" rx="3" fill="#22D3A5" opacity="0.4"/>
+    <g transform="translate(0,22)">
+      <circle cx="8"   cy="8" r="6" fill="#22D3A5"/>
+      <circle cx="28"  cy="8" r="6" fill="#22D3A5" opacity=".5"/>
+      <circle cx="48"  cy="8" r="6" fill="#1E3A52"/>
+      <circle cx="68"  cy="8" r="6" fill="#1E3A52"/>
+      <circle cx="88"  cy="8" r="6" fill="#1E3A52"/>
+      <circle cx="108" cy="8" r="6" fill="#1E3A52"/>
+    </g>
+  </g>
+  <g transform="translate(1060, 565)">
+    <circle cx="7" cy="7" r="5" fill="#22D3A5"/>
+    <text x="18" y="12" font-size="16" fill="#3D6480" letter-spacing=".08em">LIVE</text>
+  </g>
+</svg>"""
 
 PRODUCTS = [
     {"name": "Estradot 25 mcg depotplåster",         "npl_pack_id": "20040113100574"},
@@ -327,16 +371,38 @@ def render_html():
         )
         body = meta + "\n".join(cards)
 
+    og_image = f"{SITE_URL}/og-image.svg" if SITE_URL else ""
+    canonical = SITE_URL or ""
+    desc = "Realtidsövervakning av lagerstatusen för estradiolpreparat på svenska apotek. Uppdateras automatiskt."
+
     return f"""<!DOCTYPE html>
 <html lang="sv">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="refresh" content="60">
-  <title>{SITE_NAME} — lagerstatus</title>
+  <title>{SITE_NAME} — lagerstatus för läkemedel</title>
+  <meta name="description" content="{desc}">
+  <meta name="robots" content="index, follow">
+  {f'<link rel="canonical" href="{canonical}">' if canonical else ""}
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="{SITE_NAME}">
+  <meta property="og:title"       content="{SITE_NAME} — lagerstatus för läkemedel">
+  <meta property="og:description" content="{desc}">
+  {f'<meta property="og:url"         content="{canonical}">' if canonical else ""}
+  {f'<meta property="og:image"       content="{og_image}">' if og_image else ""}
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale"      content="sv_SE">
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="{SITE_NAME} — lagerstatus för läkemedel">
+  <meta name="twitter:description" content="{desc}">
+  {f'<meta name="twitter:image"      content="{og_image}">' if og_image else ""}
   <style>
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-    body {{ font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; padding: 1.5rem; }}
+    body {{ font-family: system-ui, sans-serif; background: #f5f5f5; color: #222;
+            padding: 1.5rem; min-height: 100vh; display: flex; flex-direction: column; }}
+    main {{ flex: 1; }}
     h1 {{ font-size: 1.4rem; margin-bottom: 0.25rem; }}
     .subtitle {{ color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; }}
     .meta {{ font-size: 0.8rem; color: #888; margin-bottom: 1.25rem; }}
@@ -356,18 +422,37 @@ def render_html():
     details summary::before {{ content: "▸ "; }}
     details[open] summary::before {{ content: "▾ "; }}
     .waiting {{ color: #888; font-style: italic; padding: 2rem 0; }}
+    footer {{ max-width: 720px; margin-top: 2.5rem; padding-top: 1rem;
+              border-top: 1px solid #e0e0e0; font-size: 0.75rem; color: #999; line-height: 1.6; }}
+    footer a {{ color: #999; }}
   </style>
 </head>
 <body>
-  <h1>💊 {SITE_NAME}</h1>
-  <p class="subtitle">~861 apotek · {len(PRODUCTS)} läkemedel</p>
-  {body}
+  <main>
+    <h1>💊 {SITE_NAME}</h1>
+    <p class="subtitle">~861 apotek · {len(PRODUCTS)} läkemedel</p>
+    {body}
+  </main>
+  <footer>
+    Lagerstatus hämtas från <a href="https://fass.se" target="_blank" rel="noopener">Fass.se</a>
+    i samarbete med Sveriges Apoteksförening. Informationen kan vara fördröjd — kontakta alltid
+    ditt apotek för aktuell status. {SITE_NAME} är inte kopplat till Fass, LIF eller Sveriges Apoteksförening.
+  </footer>
 </body>
 </html>"""
 
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path == "/og-image.svg":
+            data = OG_IMAGE_SVG.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "image/svg+xml")
+            self.send_header("Content-Length", len(data))
+            self.send_header("Cache-Control", "public, max-age=86400")
+            self.end_headers()
+            self.wfile.write(data)
+            return
         html = render_html().encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
