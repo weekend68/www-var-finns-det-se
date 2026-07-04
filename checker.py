@@ -4,11 +4,12 @@ Serves a status page on $PORT (set by Railway).
 
 Required env vars:
   NOTIFY_EMAIL      — recipient email
-  RESEND_API_KEY    — API-nyckel från resend.com (gratis, 100 mail/dag)
 
 Optional:
+  RESEND_API_KEY    — API-nyckel från resend.com (gratis, 100 mail/dag)
   PORT              — HTTP port for status page (default: 8080)
   POLL_INTERVAL     — minutes between checks (default: 2)
+  CACHE_FILE        — path for persistent state cache (default: /tmp/medicinstatus_cache.json)
 """
 
 import json
@@ -19,6 +20,15 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from zoneinfo import ZoneInfo
+
+TZ = ZoneInfo("Europe/Stockholm")
+CACHE_FILE = os.getenv("CACHE_FILE", "/tmp/medicinstatus_cache.json")
+POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2")) * 60
+PORT = int(os.getenv("PORT", "8080"))
+FASS_REFERER = "https://fass.se/health/product/20011130000246/stock-status"
+IN_STOCK_STATUSES = {"IN_STOCK", "FEW_IN_STOCK"}
+SHOW_LIMIT = 10  # pharmacies shown before "Visa alla"-button
 
 PRODUCTS = [
     {"name": "Estradot 37,5 mcg depotplåster",      "npl_pack_id": "20011130100489"},
@@ -40,11 +50,6 @@ CITIES = [
     ("Kalmar",      16.36,  56.66), ("Halmstad",     12.86,  56.67),
 ]
 
-POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2")) * 60
-PORT = int(os.getenv("PORT", "8080"))
-FASS_REFERER = "https://fass.se/health/product/20011130000246/stock-status"
-IN_STOCK_STATUSES = {"IN_STOCK", "FEW_IN_STOCK"}
-
 state = {
     "status": "Startar — hämtar apotekslista...",
     "last_check": None,
@@ -53,6 +58,41 @@ state = {
     "products": [{**p, "pharmacies": [], "error": None} for p in PRODUCTS],
 }
 state_lock = threading.Lock()
+
+
+def now_local():
+    return datetime.now(TZ)
+
+
+# --- CACHE ---
+
+def save_cache():
+    try:
+        with state_lock:
+            data = json.loads(json.dumps(state))
+        with open(CACHE_FILE, "w") as f:
+            json.dump(data, f)
+    except Exception as e:
+        print(f"  Cache-skrivfel: {e}")
+
+
+def load_cache():
+    """Load cached state into state dict. Returns prev_in_stock dict for change detection."""
+    try:
+        with open(CACHE_FILE) as f:
+            data = json.load(f)
+        with state_lock:
+            state.update(data)
+            state["status"] = "ok (från cache — första koll pågår)"
+        prev = {p["npl_pack_id"]: {ph["name"] for ph in p.get("pharmacies", [])}
+                for p in data.get("products", [])}
+        print(f"Cache laddad: {data.get('last_check', '?')}")
+        return prev
+    except FileNotFoundError:
+        return {}
+    except Exception as e:
+        print(f"Cache-läsfel: {e}")
+        return {}
 
 
 # --- FASS API ---
@@ -131,7 +171,7 @@ def send_email(newly_available):
     body = (
         "Följande estradiolpreparat finns nu i lager:\n"
         + "\n".join(lines)
-        + f"\n\nKontrollerat: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+        + f"\n\nKontrollerat: {now_local().strftime('%Y-%m-%d %H:%M')} (svensk tid)\n"
         + "https://fass.se/health/product/20011130000246/stock-status"
     )
 
@@ -157,13 +197,12 @@ def send_email(newly_available):
 
 # --- POLLING LOOP ---
 
-def polling_loop(pharmacy_map):
+def polling_loop(pharmacy_map, prev_in_stock):
     gln_codes = list(pharmacy_map.keys())
-    prev_in_stock = {p["npl_pack_id"]: set() for p in PRODUCTS}
 
     while True:
         t0 = time.time()
-        now = datetime.now()
+        now = now_local()
         print(f"\n[{now:%Y-%m-%d %H:%M:%S}] Kollar {len(gln_codes)} apotek, {len(PRODUCTS)} produkter...")
 
         newly_available = []
@@ -175,8 +214,9 @@ def polling_loop(pharmacy_map):
             try:
                 pharmacies = check_product_stock(npl_pack_id, gln_codes, pharmacy_map)
                 current_glns = {ph["name"] for ph in pharmacies}
-                prev_glns = prev_in_stock[npl_pack_id]
+                prev_glns = prev_in_stock.get(npl_pack_id, set())
 
+                # Only alert when going from 0 → >0
                 if pharmacies and not prev_glns:
                     newly_available.append((name, pharmacies))
 
@@ -198,7 +238,7 @@ def polling_loop(pharmacy_map):
 
         elapsed = time.time() - t0
         sleep_time = max(0, POLL_INTERVAL - elapsed)
-        next_check = datetime.fromtimestamp(time.time() + sleep_time)
+        next_check = datetime.fromtimestamp(time.time() + sleep_time, tz=TZ)
 
         with state_lock:
             state["status"] = "ok"
@@ -207,17 +247,44 @@ def polling_loop(pharmacy_map):
             state["polls_done"] += 1
             state["products"] = updated_products
 
+        save_cache()
         print(f"  Koll tog {elapsed:.0f}s, sover {sleep_time:.0f}s till nästa")
         time.sleep(sleep_time)
 
 
 # --- WEB STATUS PAGE ---
 
+def pharmacy_rows(pharmacies):
+    def row(ph):
+        exch = "✓" if ph["exchangeable"] else ""
+        return (
+            f"<tr><td>{ph['name']}</td>"
+            f"<td class='status {ph['status'].lower()}'>{ph['status'].replace('_', ' ')}</td>"
+            f"<td>{exch}</td></tr>"
+        )
+
+    if len(pharmacies) <= SHOW_LIMIT:
+        rows = "".join(row(ph) for ph in pharmacies)
+        return (
+            f"<table><thead><tr><th>Apotek</th><th>Status</th><th>Utbytbar</th></tr></thead>"
+            f"<tbody>{rows}</tbody></table>"
+        )
+
+    visible = "".join(row(ph) for ph in pharmacies[:SHOW_LIMIT])
+    hidden = "".join(row(ph) for ph in pharmacies[SHOW_LIMIT:])
+    return (
+        f"<table><thead><tr><th>Apotek</th><th>Status</th><th>Utbytbar</th></tr></thead>"
+        f"<tbody>{visible}</tbody></table>"
+        f"<details><summary>Visa alla {len(pharmacies)} apotek</summary>"
+        f"<table><tbody>{hidden}</tbody></table></details>"
+    )
+
+
 def render_html():
     with state_lock:
         snap = json.loads(json.dumps(state))
 
-    if snap["status"] != "ok":
+    if snap["status"] != "ok" and "cache" not in snap["status"]:
         body = f"<p class='waiting'>⏳ {snap['status']}</p>"
     else:
         cards = []
@@ -227,46 +294,32 @@ def render_html():
             error = p["error"]
 
             if error:
-                icon, label = "🔴", f"Fel: {error}"
-                rows = ""
+                icon, label, table = "🔴", f"Fel: {error}", ""
             elif not pharmacies:
-                icon, label = "🔴", "Inte i lager (restnoterat)"
-                rows = ""
+                icon, label, table = "🔴", "Inte i lager (restnoterat)", ""
             elif any(ph["status"] == "IN_STOCK" for ph in pharmacies):
-                icon, label = "🟢", f"{len(pharmacies)} apotek har varan"
-                rows = "".join(
-                    f"<tr><td>{ph['name']}</td>"
-                    f"<td class='status {ph['status'].lower()}'>{ph['status'].replace('_', ' ')}</td>"
-                    f"<td>{'✓' if ph['exchangeable'] else ''}</td></tr>"
-                    for ph in pharmacies
-                )
+                icon = "🟢"
+                label = f"{len(pharmacies)} apotek har varan"
+                table = pharmacy_rows(pharmacies)
             else:
-                icon, label = "🟡", f"{len(pharmacies)} apotek — få kvar"
-                rows = "".join(
-                    f"<tr><td>{ph['name']}</td>"
-                    f"<td class='status few_in_stock'>FEW IN STOCK</td>"
-                    f"<td>{'✓' if ph['exchangeable'] else ''}</td></tr>"
-                    for ph in pharmacies
-                )
+                icon = "🟡"
+                label = f"{len(pharmacies)} apotek — få kvar"
+                table = pharmacy_rows(pharmacies)
 
-            table = (
-                f"<table><thead><tr><th>Apotek</th><th>Status</th><th>Utbytbar</th></tr></thead>"
-                f"<tbody>{rows}</tbody></table>"
-                if rows else ""
-            )
+            fresh = "" if snap["status"] == "ok" else "<span class='stale'> (från cache)</span>"
             cards.append(
                 f"<div class='card'>"
-                f"<h2>{icon} {name}</h2>"
+                f"<h2>{icon} {name}{fresh}</h2>"
                 f"<p class='label'>{label}</p>"
                 f"{table}"
                 f"</div>"
             )
 
-        email_status = "✉️ Mail aktiverat" if os.getenv("RESEND_API_KEY") else "⚠️ Mail ej konfigurerat (RESEND_API_KEY saknas)"
+        email_status = "✉️ Mail aktiverat" if os.getenv("RESEND_API_KEY") else "⚠️ Mail ej konfigurerat"
         meta = (
             f"<p class='meta'>Senaste koll: {snap['last_check']} · "
             f"Nästa: {snap['next_check']} · "
-            f"Antal körningar: {snap['polls_done']} · "
+            f"Körningar: {snap['polls_done']} · "
             f"{email_status}</p>"
         )
         body = meta + "\n".join(cards)
@@ -284,22 +337,27 @@ def render_html():
     h1 {{ font-size: 1.4rem; margin-bottom: 0.25rem; }}
     .subtitle {{ color: #666; font-size: 0.9rem; margin-bottom: 1.5rem; }}
     .meta {{ font-size: 0.8rem; color: #888; margin-bottom: 1.25rem; }}
+    .stale {{ font-size: 0.75rem; color: #aaa; font-weight: normal; }}
     .card {{ background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
              box-shadow: 0 1px 3px rgba(0,0,0,.08); max-width: 720px; }}
     .card h2 {{ font-size: 1.05rem; margin-bottom: 0.4rem; }}
     .label {{ font-size: 0.9rem; color: #555; margin-bottom: 0.75rem; }}
-    table {{ width: 100%; border-collapse: collapse; font-size: 0.85rem; }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 0.5rem; }}
     th {{ text-align: left; padding: 0.4rem 0.5rem; border-bottom: 2px solid #eee; color: #888; font-weight: 600; }}
     td {{ padding: 0.35rem 0.5rem; border-bottom: 1px solid #f0f0f0; }}
     .status {{ font-weight: 600; }}
     .in_stock {{ color: #2a7d2a; }}
     .few_in_stock {{ color: #b07d00; }}
+    details summary {{ cursor: pointer; font-size: 0.85rem; color: #555; padding: 0.4rem 0;
+                       list-style: none; }}
+    details summary::before {{ content: "▸ "; }}
+    details[open] summary::before {{ content: "▾ "; }}
     .waiting {{ color: #888; font-style: italic; padding: 2rem 0; }}
   </style>
 </head>
 <body>
   <h1>💊 Apoteksvakt — lagerstatus</h1>
-  <p class="subtitle">Uppdateras automatiskt var 60:e sekund · Söker {len(CITIES)} städer · {len(PRODUCTS)} produkter</p>
+  <p class="subtitle">Sidan laddas om var 60:e sekund · ~861 apotek i Sverige · {len(PRODUCTS)} läkemedel</p>
   {body}
 </body>
 </html>"""
@@ -336,14 +394,17 @@ def main():
     web_thread = threading.Thread(target=start_web_server, daemon=True)
     web_thread.start()
 
+    # Load cached state so page shows data right away after a restart
+    prev_in_stock = load_cache()
+
     print(f"Hämtar apotekslista ({len(CITIES)} städer)...")
     with state_lock:
-        state["status"] = f"Startar — hämtar apotekslista för {len(CITIES)} städer..."
+        state["status"] = f"Startar — hämtar apotekslista ({len(CITIES)} städer)..."
     pharmacy_map = fetch_all_pharmacies()
     print(f"Hittade {len(pharmacy_map)} unika apotek i Sverige")
     print(f"Pollar var {POLL_INTERVAL // 60} minut(er)\n")
 
-    polling_loop(pharmacy_map)
+    polling_loop(pharmacy_map, prev_in_stock)
 
 
 if __name__ == "__main__":
