@@ -29,6 +29,7 @@ PORT = int(os.getenv("PORT", "8080"))
 FASS_REFERER = "https://fass.se/health/product/20011130000246/stock-status"
 IN_STOCK_STATUSES = {"IN_STOCK", "FEW_IN_STOCK"}
 SHOW_LIMIT = 10  # pharmacies shown before "Visa alla"-button
+SITE_NAME = os.getenv("SITE_NAME", "medicinstatus.se")
 
 PRODUCTS = [
     {"name": "Estradot 37,5 mcg depotplåster",      "npl_pack_id": "20011130100489"},
@@ -330,7 +331,7 @@ def render_html():
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="refresh" content="60">
-  <title>Apoteksvakt — lagerstatus</title>
+  <title>{SITE_NAME} — lagerstatus</title>
   <style>
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
     body {{ font-family: system-ui, sans-serif; background: #f5f5f5; color: #222; padding: 1.5rem; }}
@@ -356,7 +357,7 @@ def render_html():
   </style>
 </head>
 <body>
-  <h1>💊 Apoteksvakt — lagerstatus</h1>
+  <h1>💊 {SITE_NAME}</h1>
   <p class="subtitle">~861 apotek · {len(PRODUCTS)} läkemedel</p>
   {body}
 </body>
