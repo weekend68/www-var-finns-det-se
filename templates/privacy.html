@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Integritetspolicy — {{ site_name }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
+           min-height: 100vh; display: flex; flex-direction: column; }
+    .hero { background: #0D1B2A; border-left: 5px solid #22D3A5; padding: 1rem 1.5rem; }
+    .hero a { color: #22D3A5; font-weight: 700; text-decoration: none; font-size: 1.1rem; }
+    main { flex: 1; padding: 2rem 1.5rem; max-width: 680px; }
+    h1 { font-size: 1.4rem; color: #0D1B2A; margin-bottom: 0.5rem; }
+    .updated { font-size: 0.8rem; color: #888; margin-bottom: 2rem; }
+    h2 { font-size: 1rem; color: #0D1B2A; margin: 1.75rem 0 0.5rem; }
+    p, li { font-size: 0.9rem; line-height: 1.7; color: #333; margin-bottom: 0.5rem; }
+    ul { padding-left: 1.25rem; }
+    a { color: #22D3A5; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <a href="/">{{ site_name }}</a>
+  </header>
+  <main>
+    <h1>Integritetspolicy</h1>
+    <p class="updated">Senast uppdaterad: 2026-07-05</p>
+
+    <h2>Personuppgiftsansvarig</h2>
+    <p>{{ site_name }} (kontakt: <a href="mailto:kontakt@medicinstatus.se">kontakt@medicinstatus.se</a>)</p>
+
+    <h2>Vilka uppgifter samlar vi in?</h2>
+    <ul>
+      <li>E-postadress — för att skicka lagernotiser och hantera prenumerationen</li>
+      <li>Val av läkemedel (npl-packs-id, teknisk identifierare) — för att veta vilket läkemedel du vill bevaka</li>
+      <li>Tidpunkt för samtycke och bekräftelse — för GDPR-dokumentation</li>
+    </ul>
+    <p>Vi sparar <strong>inte</strong> postnummer eller annan personlig information i klartext.</p>
+
+    <h2>Rättslig grund</h2>
+    <p>
+      Behandlingen sker med stöd av ditt samtycke (artikel 6(1)(a) GDPR). Eftersom
+      läkemedelsinformation kan utgöra hälsodata (artikel 9 GDPR) inhämtar vi även
+      uttryckligt samtycke enligt artikel 9(2)(a).
+    </p>
+
+    <h2>Hur länge sparar vi uppgifterna?</h2>
+    <ul>
+      <li>Aktiva prenumerationer löper i 30 dagar och kan förnyas</li>
+      <li>Inaktiva prenumerationer raderas automatiskt 7 dagar efter utgångsdatum</li>
+      <li>Samtyckesstämpeln (utan känslig data) sparas i 3 år för GDPR-dokumentation</li>
+    </ul>
+
+    <h2>Dina rättigheter</h2>
+    <p>Du har rätt att:</p>
+    <ul>
+      <li>Avregistrera dig — via länken i varje mail vi skickar</li>
+      <li>Begära radering — kontakta oss via e-post så raderar vi alla dina uppgifter</li>
+      <li>Invända mot behandlingen — kontakta oss eller IMY (imy.se)</li>
+    </ul>
+
+    <h2>Underleverantörer</h2>
+    <ul>
+      <li><strong>Railway</strong> — driftsättning och databas (EU/USA, standardavtalsklausuler)</li>
+      <li><strong>Resend</strong> — e-postleverans (USA, standardavtalsklausuler)</li>
+    </ul>
+  </main>
+</body>
+</html>

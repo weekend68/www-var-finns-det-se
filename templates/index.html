@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="60">
+  <title>{{ site_name }} — lagerstatus för läkemedel</title>
+  <meta name="description" content="{{ desc }}">
+  <meta name="robots" content="index, follow">
+  {% if canonical %}<link rel="canonical" href="{{ canonical }}">{% endif %}
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="{{ site_name }}">
+  <meta property="og:title"       content="{{ site_name }} — lagerstatus för läkemedel">
+  <meta property="og:description" content="{{ desc }}">
+  {% if canonical %}<meta property="og:url" content="{{ canonical }}">{% endif %}
+  {% if og_image %}
+  <meta property="og:image"       content="{{ og_image }}">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  {% endif %}
+  <meta property="og:locale"      content="sv_SE">
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="{{ site_name }} — lagerstatus för läkemedel">
+  <meta name="twitter:description" content="{{ desc }}">
+  {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
+           min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* hero */
+    .hero {
+      background: #0D1B2A;
+      background-image: radial-gradient(#1E3A52 1px, transparent 1px);
+      background-size: 40px 40px;
+      border-left: 5px solid #22D3A5;
+      padding: 2rem 1.5rem 1.75rem;
+      position: relative;
+    }
+    .hero-inner { max-width: 720px; }
+    .hero-brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+    .hero-name { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+    .hero-name-main { color: #EEF4F8; }
+    .hero-name-tld  { color: #22D3A5; }
+    .hero-tagline { color: #6B8CA6; font-size: 0.8rem; letter-spacing: 0.06em;
+                    text-transform: uppercase; margin-bottom: 0.9rem; }
+    .hero-desc { color: #8CAFC7; font-size: 0.875rem; line-height: 1.65; max-width: 560px; }
+    .hero-desc a { color: #22D3A5; text-decoration: none; }
+    .live-badge { position: absolute; top: 1.25rem; right: 1.5rem;
+                  display: flex; align-items: center; gap: 0.4rem;
+                  color: #3D6480; font-size: 0.7rem; letter-spacing: .12em; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #22D3A5;
+                animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* main */
+    main { flex: 1; padding: 1.5rem; }
+    .meta { font-size: 0.8rem; color: #888; margin-bottom: 1.25rem; }
+    .stale { font-size: 0.75rem; color: #aaa; font-weight: normal; }
+    .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08); max-width: 720px; }
+    .card-header { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.4rem; }
+    .card h2 { font-size: 1.05rem; flex: 1; }
+    .btn-watch { flex-shrink: 0; background: #22D3A5; color: #0D1B2A; font-weight: 600;
+                 padding: 0.3rem 0.8rem; border-radius: 5px; text-decoration: none;
+                 font-size: 0.78rem; white-space: nowrap; align-self: center; }
+    .btn-watch:hover { background: #1bb890; }
+    .card-label { font-size: 0.9rem; color: #555; margin-bottom: 0.75rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 0.5rem;
+            overflow-x: auto; display: block; }
+    th { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 2px solid #eee;
+         color: #888; font-weight: 600; }
+    td { padding: 0.35rem 0.5rem; border-bottom: 1px solid #f0f0f0; }
+    .status { font-weight: 600; }
+    .in_stock    { color: #2a7d2a; }
+    .few_in_stock { color: #b07d00; }
+    details summary { cursor: pointer; font-size: 0.85rem; color: #555; padding: 0.4rem 0;
+                      list-style: none; }
+    details summary::before { content: "▸ "; }
+    details[open] summary::before { content: "▾ "; }
+    .waiting { color: #888; font-style: italic; padding: 2rem 0; }
+
+    /* search */
+    .search-section { max-width: 720px; margin-bottom: 1.5rem; }
+    .search-row { display: flex; gap: 0.5rem; }
+    .search-input { flex: 1; padding: 0.65rem 0.9rem; border: 1.5px solid #dde4ec;
+                    border-radius: 7px; font-size: 1rem; font-family: inherit;
+                    background: #fff; }
+    .search-input:focus { outline: none; border-color: #22D3A5; }
+    .search-results { background: #fff; border: 1px solid #e0e0e0; border-radius: 7px;
+                      margin-top: 4px; box-shadow: 0 4px 12px rgba(0,0,0,.1);
+                      max-height: 260px; overflow-y: auto; }
+    .search-item { padding: 0.6rem 1rem; cursor: pointer; font-size: 0.9rem;
+                   border-bottom: 1px solid #f0f0f0; }
+    .search-item:last-child { border-bottom: none; }
+    .search-item:hover, .search-item.active { background: #f0faf7; }
+    .search-form-text { font-size: 0.8rem; color: #888; margin-top: 0.4rem; }
+    .search-result-card { background: #fff; border-radius: 8px; padding: 1.25rem;
+                          margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.08);
+                          max-width: 720px; border-left: 3px solid #22D3A5; }
+    .search-result-card h3 { font-size: 1rem; margin-bottom: 0.75rem; color: #0D1B2A; }
+    .pkg-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .pkg-item { display: flex; align-items: center; justify-content: space-between;
+                padding: 0.5rem 0.75rem; background: #f8fafb; border-radius: 6px;
+                font-size: 0.88rem; }
+    .pkg-name { flex: 1; }
+    .pkg-stock { font-size: 0.8rem; color: #888; margin: 0 0.75rem; }
+    .pkg-stock.in { color: #2a7d2a; }
+    .pkg-stock.out { color: #c0392b; }
+    .search-msg { font-size: 0.85rem; color: #888; font-style: italic; padding: 0.5rem 0; }
+
+    footer { max-width: 720px; margin: 2rem auto 0; padding: 1rem 1.5rem 1.5rem;
+             font-size: 0.75rem; color: #999; line-height: 1.6;
+             border-top: 1px solid #e0e0e0; }
+    footer a { color: #999; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-brand">
+        <svg width="36" height="16" viewBox="0 0 36 16" aria-hidden="true" style="flex-shrink:0">
+          <rect x="0" y="0" width="36" height="16" rx="8" fill="none" stroke="#22D3A5" stroke-width="1.5"/>
+          <line x1="18" y1="0" x2="18" y2="16" stroke="#22D3A5" stroke-width="1.5"/>
+          <clipPath id="pill-lh"><rect x="0" y="0" width="18" height="16"/></clipPath>
+          <rect x="0" y="0" width="36" height="16" rx="8" fill="#22D3A5" clip-path="url(#pill-lh)"/>
+        </svg>
+        <span class="hero-name">
+          <span class="hero-name-main">{{ name_base }}</span><span class="hero-name-tld">{{ name_tld }}</span>
+        </span>
+      </div>
+      <p class="hero-tagline">Lagerstatus för läkemedel på apotek i Sverige</p>
+      <p class="hero-desc">
+        Sidan bevakar lagerstatus för {{ product_count }} utvalda läkemedel
+        på alla Sveriges apotek. Informationen hämtas direkt från
+        <a href="https://fass.se" target="_blank" rel="noopener">Fass.se</a>
+        och uppdateras automatiskt var {{ poll_min }}. minut.
+        Du kan prenumerera på e-postaviseringar när ett läkemedel återfås i lager.
+      </p>
+    </div>
+    <div class="live-badge" aria-label="Live">
+      <span class="live-dot"></span>LIVE
+    </div>
+  </header>
+
+  <main>
+    <!-- Search box -->
+    <div class="search-section">
+      <div class="search-row">
+        <input id="search-input" class="search-input" type="search"
+               placeholder="Sök läkemedel…" autocomplete="off" aria-label="Sök läkemedel">
+      </div>
+      <p class="search-form-text">Skriv minst 2 tecken för att söka i Fass-katalogen</p>
+      <div id="search-dropdown" class="search-results" style="display:none"></div>
+      <div id="search-result-area"></div>
+    </div>
+
+    <!-- Existing status cards -->
+    <div id="status-cards">
+    {% set is_loading = snap.status != "ok" and "cache" not in snap.status %}
+    {% if is_loading %}
+      <p class="waiting">⏳ {{ snap.status }}</p>
+    {% else %}
+      <p class="meta">
+        Senaste koll: {{ snap.last_check }} &middot;
+        Nästa: {{ snap.next_check }} &middot;
+        Körningar: {{ snap.polls_done }} &middot;
+        {% if email_active %}✉️ Mail aktiverat{% else %}⚠️ Mail ej konfigurerat{% endif %}
+      </p>
+
+      {% for p in snap.products %}
+        {% set pharmacies = p.pharmacies %}
+        {% set is_stale = snap.status != "ok" %}
+        <div class="card">
+          {% if p.error %}
+            <div class="card-header">
+              <h2>🔴 {{ p.name }}{% if is_stale %} <span class="stale">(från cache)</span>{% endif %}</h2>
+              <a class="btn-watch" href="/subscribe?npl={{ p.npl_pack_id }}">Bevaka</a>
+            </div>
+            <p class="card-label">Fel: {{ p.error }}</p>
+          {% elif not pharmacies %}
+            <div class="card-header">
+              <h2>🔴 {{ p.name }}{% if is_stale %} <span class="stale">(från cache)</span>{% endif %}</h2>
+              <a class="btn-watch" href="/subscribe?npl={{ p.npl_pack_id }}">Bevaka</a>
+            </div>
+            <p class="card-label">Inte i lager (restnoterat)</p>
+          {% elif pharmacies | selectattr("status", "equalto", "IN_STOCK") | list %}
+            <div class="card-header">
+              <h2>🟢 {{ p.name }}{% if is_stale %} <span class="stale">(från cache)</span>{% endif %}</h2>
+              <a class="btn-watch" href="/subscribe?npl={{ p.npl_pack_id }}">Bevaka</a>
+            </div>
+            <p class="card-label">{{ pharmacies | length }} apotek har varan</p>
+          {% else %}
+            <div class="card-header">
+              <h2>🟡 {{ p.name }}{% if is_stale %} <span class="stale">(från cache)</span>{% endif %}</h2>
+              <a class="btn-watch" href="/subscribe?npl={{ p.npl_pack_id }}">Bevaka</a>
+            </div>
+            <p class="card-label">{{ pharmacies | length }} apotek — få kvar</p>
+          {% endif %}
+
+          {% if pharmacies %}
+            {% set visible = pharmacies[:show_limit] %}
+            {% set hidden  = pharmacies[show_limit:] %}
+            <table>
+              <thead><tr><th>Apotek</th><th>Status</th><th>Utbytbar</th></tr></thead>
+              <tbody>
+                {% for ph in visible %}
+                <tr>
+                  <td>{{ ph.name }}</td>
+                  <td class="status {{ ph.status | lower }}">{{ ph.status | replace("_", " ") }}</td>
+                  <td>{% if ph.exchangeable %}✓{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% if hidden %}
+            <details>
+              <summary>Visa alla {{ pharmacies | length }} apotek</summary>
+              <table>
+                <tbody>
+                  {% for ph in hidden %}
+                  <tr>
+                    <td>{{ ph.name }}</td>
+                    <td class="status {{ ph.status | lower }}">{{ ph.status | replace("_", " ") }}</td>
+                    <td>{% if ph.exchangeable %}✓{% endif %}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </details>
+            {% endif %}
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endif %}
+    </div><!-- #status-cards -->
+  </main>
+
+  <script>
+  (function () {
+    const input = document.getElementById('search-input');
+    const dropdown = document.getElementById('search-dropdown');
+    const resultArea = document.getElementById('search-result-area');
+    const statusCards = document.getElementById('status-cards');
+    let debounce, currentNplId = '';
+
+    input.addEventListener('input', function () {
+      clearTimeout(debounce);
+      const q = input.value.trim();
+      if (q.length < 2) { hideDropdown(); return; }
+      debounce = setTimeout(() => doSearch(q), 250);
+    });
+
+    input.addEventListener('keydown', function (e) {
+      const items = dropdown.querySelectorAll('.search-item');
+      const active = dropdown.querySelector('.search-item.active');
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = active ? active.nextElementSibling : items[0];
+        if (next) { active && active.classList.remove('active'); next.classList.add('active'); }
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = active ? active.previousElementSibling : null;
+        if (prev) { active.classList.remove('active'); prev.classList.add('active'); }
+      } else if (e.key === 'Enter') {
+        const a = dropdown.querySelector('.search-item.active');
+        if (a) { e.preventDefault(); a.click(); }
+      } else if (e.key === 'Escape') {
+        hideDropdown();
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) hideDropdown();
+    });
+
+    // Reset: clear search when user deletes input
+    input.addEventListener('search', function () {
+      if (!input.value) { hideDropdown(); showStatus(); }
+    });
+
+    function doSearch(q) {
+      fetch('/api/search?q=' + encodeURIComponent(q))
+        .then(r => r.json())
+        .then(results => showDropdown(results))
+        .catch(() => hideDropdown());
+    }
+
+    function showDropdown(results) {
+      if (!results.length) {
+        dropdown.innerHTML = '<div class="search-item" style="color:#888">Inga träffar</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+      dropdown.innerHTML = results.map(r =>
+        `<div class="search-item" data-npl="${r.npl_id}" data-name="${esc(r.name)}">
+           ${esc(r.name)}<span style="color:#888;font-size:.8rem;margin-left:.5rem">${esc(r.form || '')}</span>
+         </div>`
+      ).join('');
+      dropdown.querySelectorAll('.search-item').forEach(el => {
+        el.addEventListener('click', () => selectProduct(el.dataset.npl, el.dataset.name));
+      });
+      dropdown.style.display = 'block';
+    }
+
+    function hideDropdown() { dropdown.style.display = 'none'; }
+
+    function showStatus() { statusCards.style.display = ''; resultArea.innerHTML = ''; }
+
+    function selectProduct(nplId, name) {
+      currentNplId = nplId;
+      input.value = name;
+      hideDropdown();
+      statusCards.style.display = 'none';
+      resultArea.innerHTML = '<p class="search-msg">Hämtar förpackningar…</p>';
+
+      fetch('/api/packages?nplId=' + encodeURIComponent(nplId))
+        .then(r => r.json())
+        .then(pkgs => showPackages(nplId, name, pkgs))
+        .catch(() => {
+          resultArea.innerHTML = '<p class="search-msg">Kunde inte hämta förpackningar.</p>';
+        });
+    }
+
+    function showPackages(nplId, productName, pkgs) {
+      if (!pkgs.length) {
+        resultArea.innerHTML = `<div class="search-result-card">
+          <h3>${esc(productName)}</h3>
+          <p class="search-msg">Inga förpackningar hittades. <a href="/subscribe?npl=${esc(nplId)}">Bevaka ändå</a></p>
+        </div>`;
+        return;
+      }
+
+      const items = pkgs.map(p => `
+        <div class="pkg-item">
+          <span class="pkg-name">${esc(p.name || p.npl_pack_id)}</span>
+          <span class="pkg-stock" id="stock-${p.npl_pack_id}">…</span>
+          <a class="btn-watch" href="/subscribe?npl=${esc(p.npl_pack_id)}">Bevaka</a>
+        </div>`).join('');
+
+      resultArea.innerHTML = `<div class="search-result-card">
+        <h3>${esc(productName)}</h3>
+        <div class="pkg-list">${items}</div>
+        <p style="font-size:.75rem;color:#aaa;margin-top:.75rem">
+          Samplad lagerkoll på 300 apotek — prenumerera för fullständig bevakning av hela Sverige.
+        </p>
+      </div>`;
+
+      // Fetch stock for each package asynchronously
+      pkgs.forEach(p => {
+        fetch('/api/stock/' + encodeURIComponent(p.npl_pack_id))
+          .then(r => r.json())
+          .then(data => {
+            const el = document.getElementById('stock-' + p.npl_pack_id);
+            if (!el) return;
+            const n = data.pharmacies ? data.pharmacies.length : 0;
+            if (n > 0) {
+              el.textContent = n + ' apotek i lager';
+              el.classList.add('in');
+            } else {
+              el.textContent = 'Restnoterat';
+              el.classList.add('out');
+            }
+          })
+          .catch(() => {
+            const el = document.getElementById('stock-' + p.npl_pack_id);
+            if (el) el.textContent = '';
+          });
+      });
+    }
+
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  })();
+  </script>
+
+  <footer>
+    Lagerstatus hämtas från <a href="https://fass.se" target="_blank" rel="noopener">Fass.se</a>
+    i samarbete med Sveriges Apoteksförening. Informationen kan vara fördröjd — kontakta alltid
+    ditt apotek för aktuell status. {{ site_name }} är inte kopplat till Fass, LIF eller Sveriges Apoteksförening.
+  </footer>
+</body>
+</html>

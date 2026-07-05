@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bevaka läkemedel — medicinstatus.se</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
+           min-height: 100vh; display: flex; flex-direction: column; }
+    .hero { background: #0D1B2A; border-left: 5px solid #22D3A5; padding: 1rem 1.5rem; }
+    .hero a { color: #22D3A5; font-weight: 700; text-decoration: none; font-size: 1.1rem; }
+    main { flex: 1; display: flex; align-items: flex-start; justify-content: center;
+           padding: 2rem 1.5rem; }
+    .card { background: #fff; border-radius: 10px; padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08); max-width: 480px; width: 100%; }
+    h1 { font-size: 1.3rem; margin-bottom: 0.3rem; color: #0D1B2A; }
+    .med-name { color: #22D3A5; font-weight: 600; font-size: 0.95rem; margin-bottom: 1.5rem; }
+    label { display: block; font-size: 0.85rem; font-weight: 600; color: #444;
+            margin-bottom: 0.3rem; margin-top: 1rem; }
+    input[type="email"] {
+      width: 100%; padding: 0.65rem 0.75rem; border: 1.5px solid #dde4ec;
+      border-radius: 6px; font-size: 1rem; font-family: inherit;
+      transition: border-color .15s;
+    }
+    input[type="email"]:focus { outline: none; border-color: #22D3A5; }
+    .consent-row { display: flex; gap: 0.6rem; align-items: flex-start; margin-top: 1.25rem; }
+    .consent-row input[type="checkbox"] { margin-top: 0.15rem; flex-shrink: 0; width: 16px; height: 16px; }
+    .consent-row label { margin: 0; font-weight: 400; color: #555; font-size: 0.82rem; line-height: 1.5; }
+    .consent-row a { color: #22D3A5; }
+    .error { background: #fff3f3; border: 1px solid #f5c6cb; border-radius: 6px;
+             padding: 0.65rem 0.9rem; color: #721c24; font-size: 0.85rem; margin-bottom: 1rem; }
+    button { width: 100%; margin-top: 1.5rem; padding: 0.75rem; background: #22D3A5;
+             color: #0D1B2A; border: none; border-radius: 6px; font-size: 1rem;
+             font-weight: 700; cursor: pointer; font-family: inherit; }
+    button:hover { background: #1bb890; }
+    .back { display: block; text-align: center; margin-top: 1rem; font-size: 0.85rem;
+            color: #888; text-decoration: none; }
+    .back:hover { color: #555; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <a href="/">medicinstatus.se</a>
+  </header>
+  <main>
+    <div class="card">
+      <h1>Bevaka läkemedel</h1>
+      {% if med_name %}
+      <p class="med-name">{{ med_name }}</p>
+      {% endif %}
+
+      {% if error %}
+      <div class="error">{{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="/subscribe" novalidate>
+        <input type="hidden" name="npl_pack_id" value="{{ npl_pack_id }}">
+
+        <label for="email">E-postadress</label>
+        <input type="email" id="email" name="email" placeholder="din@email.se"
+               autocomplete="email" required>
+
+        <div class="consent-row">
+          <input type="checkbox" id="consent" name="consent" value="1">
+          <label for="consent">
+            Jag godkänner
+            <a href="/privacy" target="_blank">integritetspolicyn</a>
+            och samtycker till att medicinstatus.se behandlar min e-postadress och mitt
+            läkemedelsval för att skicka lagernotiser. Jag kan när som helst avregistrera
+            mig via länken i varje mail.
+          </label>
+        </div>
+
+        <button type="submit">Bevaka &rarr;</button>
+      </form>
+
+      <a class="back" href="/">&larr; Tillbaka</a>
+    </div>
+  </main>
+</body>
+</html>
