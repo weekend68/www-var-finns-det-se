@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Bevaka läkemedel — medicinstatus.se</title>
+  <title>Bevaka ett läkemedel — {{ site_name }}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
@@ -41,11 +41,11 @@
 </head>
 <body>
   <header class="hero">
-    <a href="/">medicinstatus.se</a>
+    <a href="/">{{ site_name }}</a>
   </header>
   <main>
     <div class="card">
-      <h1>Bevaka läkemedel</h1>
+      <h1>Meddela mig när det finns igen</h1>
       {% if med_name %}
       <p class="med-name">{{ med_name }}</p>
       {% endif %}
@@ -66,7 +66,7 @@
           <label for="consent">
             Jag godkänner
             <a href="/privacy" target="_blank">integritetspolicyn</a>
-            och samtycker till att medicinstatus.se behandlar min e-postadress och mitt
+            och samtycker till att {{ site_name }} behandlar min e-postadress och mitt
             läkemedelsval för att skicka lagernotiser. Jag kan när som helst avregistrera
             mig via länken i varje mail.
           </label>

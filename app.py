@@ -26,9 +26,9 @@ OG_IMAGE_SVG = """<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg"
     <rect x="0" y="0" width="160" height="70" rx="35" fill="#22D3A5" clip-path="url(#lh)"/>
   </g>
   <text x="110" y="352" font-size="88" font-weight="700" letter-spacing="-2">
-    <tspan fill="#EEF4F8">medicinstatus</tspan><tspan fill="#22D3A5">.se</tspan>
+    <tspan fill="#EEF4F8">varfinnsdet</tspan><tspan fill="#22D3A5">.se</tspan>
   </text>
-  <text x="112" y="408" font-size="28" font-weight="400" fill="#6B8CA6">Lagerstatus för läkemedel på apotek i Sverige</text>
+  <text x="112" y="408" font-size="28" font-weight="400" fill="#8CAFC7">Vilket apotek har ditt läkemedel just nu?</text>
   <g transform="translate(110, 460)">
     <rect x="0" y="0" width="980" height="6" rx="3" fill="#162A3E"/>
     <rect x="0" y="0" width="90" height="6" rx="3" fill="#22D3A5"/>
@@ -86,6 +86,10 @@ def _template_vars():
 
 def create_app():
     app = Flask(__name__)
+
+    @app.context_processor
+    def inject_globals():
+        return dict(site_name=SITE_NAME)
 
     init_db()
 

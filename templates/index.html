@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ site_name }} — lagerstatus för läkemedel</title>
+  <title>{{ site_name }} — hitta ditt läkemedel</title>
   <meta name="description" content="{{ desc }}">
   <meta name="robots" content="index, follow">
   {% if canonical %}<link rel="canonical" href="{{ canonical }}">{% endif %}
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="{{ site_name }}">
-  <meta property="og:title"       content="{{ site_name }} — lagerstatus för läkemedel">
+  <meta property="og:title"       content="{{ site_name }} — hitta ditt läkemedel">
   <meta property="og:description" content="{{ desc }}">
   {% if canonical %}<meta property="og:url" content="{{ canonical }}">{% endif %}
   {% if og_image %}
@@ -19,7 +19,7 @@
   {% endif %}
   <meta property="og:locale"      content="sv_SE">
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="{{ site_name }} — lagerstatus för läkemedel">
+  <meta name="twitter:title"       content="{{ site_name }} — hitta ditt läkemedel">
   <meta name="twitter:description" content="{{ desc }}">
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <style>
@@ -149,13 +149,12 @@
           <span class="hero-name-main">{{ name_base }}</span><span class="hero-name-tld">{{ name_tld }}</span>
         </span>
       </div>
-      <p class="hero-tagline">Lagerstatus för läkemedel på apotek i Sverige</p>
+      <p class="hero-tagline">Vilket apotek har ditt läkemedel just nu?</p>
       <p class="hero-desc">
-        Sidan bevakar lagerstatus för {{ product_count }} utvalda läkemedel
-        på alla Sveriges apotek. Informationen hämtas direkt från
-        <a href="https://fass.se" target="_blank" rel="noopener">Fass.se</a>
-        och uppdateras automatiskt var {{ poll_min }} minuter.
-        Du kan prenumerera på e-postaviseringar när ett läkemedel återfås i lager.
+        Här ser du lagerstatus för {{ product_count }} läkemedel på alla Sveriges apotek —
+        uppdaterat var {{ poll_min }}:e minut direkt från
+        <a href="https://fass.se" target="_blank" rel="noopener">Fass.se</a>.
+        Är ditt läkemedel restnoterat? Sätt upp en bevakning så får du ett mail så fort det finns igen.
       </p>
     </div>
     <div class="live-badge" aria-label="Live">
@@ -168,11 +167,11 @@
     <div class="search-section">
       <div class="search-row">
         <input id="search-input" class="search-input" type="search"
-               placeholder="Sök läkemedel…" autocomplete="off" aria-label="Sök läkemedel">
+               placeholder="Vilket läkemedel letar du efter?" autocomplete="off" aria-label="Sök läkemedel">
         <button id="search-clear" class="search-clear" type="button"
                 aria-label="Rensa sökning" style="display:none">✕</button>
       </div>
-      <p class="search-form-text">Skriv minst 2 tecken för att söka i Fass-katalogen</p>
+      <p class="search-form-text">Skriv minst 2 tecken för att söka bland läkemedel</p>
       <div id="search-dropdown" class="search-results" style="display:none"></div>
       <div id="search-result-area"></div>
     </div>

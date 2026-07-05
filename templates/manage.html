@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Dina bevakningar — medicinstatus.se</title>
+  <title>Mina bevakningar — {{ site_name }}</title>
   <meta name="robots" content="noindex">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -35,7 +35,7 @@
 </head>
 <body>
   <header class="hero">
-    <a href="/">medicinstatus.se</a>
+    <a href="/">{{ site_name }}</a>
   </header>
   <main>
     <h1>Dina bevakningar</h1>
@@ -71,7 +71,7 @@
       <p class="empty">Du har inga aktiva bevakningar.</p>
     {% endif %}
 
-    <a class="add-btn" href="/">+ Bevaka ett läkemedel</a>
+    <a class="add-btn" href="/">+ Bevaka ett nytt läkemedel</a>
   </main>
 </body>
 </html>
