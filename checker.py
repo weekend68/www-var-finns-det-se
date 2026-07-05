@@ -287,12 +287,6 @@ def polling_loop(prev_in_stock):
         _log_poll(now, all_products, result_map, notified_ids, len(gln_codes))
 
         if newly_available:
-            if os.getenv("RESEND_API_KEY") and os.getenv("NOTIFY_EMAIL"):
-                try:
-                    send_email([(name, pharms) for name, pharms, _ in newly_available])
-                except Exception as e:
-                    print(f"  Mailfel (legacy): {e}")
-
             for name, pharmacies, npl_pack_id in newly_available:
                 _notify_subscribers(npl_pack_id, name, pharmacies)
 
