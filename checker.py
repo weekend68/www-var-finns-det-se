@@ -65,10 +65,12 @@ def now_local():
 
 # --- CACHE ---
 
-def save_cache():
+def save_cache(prev_in_stock=None):
     try:
         with state_lock:
             data = json.loads(json.dumps(state))
+        if prev_in_stock is not None:
+            data["prev_in_stock"] = {k: list(v) for k, v in prev_in_stock.items()}
         with open(CACHE_FILE, "w") as f:
             json.dump(data, f)
     except Exception as e:
@@ -81,11 +83,15 @@ def load_cache():
         with open(CACHE_FILE) as f:
             data = json.load(f)
         with state_lock:
-            state.update(data)
+            state.update({k: v for k, v in data.items() if k != "prev_in_stock"})
             state["status"] = "ok (från cache — första koll pågår)"
-        prev = {p["npl_pack_id"]: {ph["name"] for ph in p.get("pharmacies", [])}
-                for p in data.get("products", [])}
-        print(f"Cache laddad: {data.get('last_check', '?')}")
+        if "prev_in_stock" in data:
+            prev = {k: set(v) for k, v in data["prev_in_stock"].items()}
+        else:
+            # Bakåtkompatibilitet med gamla cache-filer
+            prev = {p["npl_pack_id"]: {ph["name"] for ph in p.get("pharmacies", [])}
+                    for p in data.get("products", [])}
+        print(f"Cache laddad: {data.get('last_check', '?')}, {len(prev)} produkters tillstånd")
         return prev
     except FileNotFoundError:
         return {}
@@ -307,7 +313,7 @@ def polling_loop(prev_in_stock):
             state["polls_done"] += 1
             state["products"] = updated_products
 
-        save_cache()
+        save_cache(prev_in_stock)
         print(f"  Koll tog {elapsed:.0f}s, sover {sleep_time:.0f}s till nästa")
         time.sleep(sleep_time)
 
