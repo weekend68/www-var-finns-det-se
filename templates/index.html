@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ site_name }} — hitta ditt läkemedel</title>
+  <title>{{ site_name }} — hitta mitt läkemedel</title>
   <meta name="description" content="{{ desc }}">
   <meta name="robots" content="index, follow">
   {% if canonical %}<link rel="canonical" href="{{ canonical }}">{% endif %}
   <meta property="og:type"        content="website">
   <meta property="og:site_name"   content="{{ site_name }}">
-  <meta property="og:title"       content="Vilket apotek har ditt läkemedel just nu?">
+  <meta property="og:title"       content="Vilket apotek har mitt läkemedel just nu?">
   <meta property="og:description" content="{{ desc }}">
   {% if canonical %}<meta property="og:url" content="{{ canonical }}">{% endif %}
   {% if og_image %}
@@ -19,7 +19,7 @@
   {% endif %}
   <meta property="og:locale"      content="sv_SE">
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:title"       content="{{ site_name }} — hitta ditt läkemedel">
+  <meta name="twitter:title"       content="{{ site_name }} — hitta mitt läkemedel">
   <meta name="twitter:description" content="{{ desc }}">
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <style>
@@ -43,8 +43,13 @@
     .hero-name-tld  { color: #22D3A5; }
     .hero-tagline { color: #8CAFC7; font-size: 0.8rem; letter-spacing: 0.06em;
                     text-transform: uppercase; margin-bottom: 0.9rem; }
-    .hero-desc { color: #A8C8DC; font-size: 0.875rem; line-height: 1.65; max-width: 560px; }
+    .hero-desc { color: #A8C8DC; font-size: 0.875rem; line-height: 1.65; max-width: 560px; margin-bottom: 1rem; }
     .hero-desc a { color: #22D3A5; text-decoration: none; }
+    .hero-steps { color: #6a90a8; font-size: 0.8rem; max-width: 560px; line-height: 1.8; }
+    .hero-steps strong { color: #A8C8DC; }
+    .section-heading { font-size: 0.8rem; font-weight: 600; color: #888;
+                       text-transform: uppercase; letter-spacing: 0.06em;
+                       margin-bottom: 0.75rem; max-width: 720px; }
     .live-badge { position: absolute; top: 1.25rem; right: 1.5rem;
                   display: flex; align-items: center; gap: 0.4rem;
                   color: #3D6480; font-size: 0.7rem; letter-spacing: .12em; }
@@ -164,11 +169,15 @@
           <span class="hero-name-main">{{ name_base }}</span><span class="hero-name-tld">{{ name_tld }}</span>
         </a>
       </div>
-      <p class="hero-tagline">Vilket apotek har ditt läkemedel just nu?</p>
+      <p class="hero-tagline">Vilket apotek har mitt läkemedel just nu?</p>
       <p class="hero-desc">
-        Lagerstatus för {{ product_count }} läkemedel på alla Sveriges apotek —
-        uppdaterat var {{ poll_min }}:e minut direkt från
-        <a href="https://fass.se" target="_blank" rel="noopener">Fass.se</a>.
+        Lagerstatus för alla läkemedel på Sveriges apotek — sök eller välj ett från listan nedan.
+        Är ditt läkemedel restnoterat? Bevaka det — vi skickar e-post så fort det finns igen på något apotek i Sverige.
+      </p>
+      <p class="hero-steps">
+        🔍 <strong>Sök</strong> ditt läkemedel &nbsp;→&nbsp;
+        🔔 <strong>Bevaka</strong> med din e-postadress &nbsp;→&nbsp;
+        📬 <strong>Få e-post</strong> när det finns igen
       </p>
     </div>
     <div class="live-badge" aria-label="Live">
@@ -178,7 +187,7 @@
 
   <div class="search-band">
     <div class="search-band-inner">
-      <label class="search-label" for="search-input">Sök ditt läkemedel</label>
+      <label class="search-label" for="search-input">Sök läkemedel</label>
       <div class="search-row">
         <input id="search-input" class="search-input" type="search"
                placeholder="T.ex. Estradot, Lenzetto, Metformin…" autocomplete="off" aria-label="Sök läkemedel">
@@ -200,6 +209,7 @@
       <p class="meta">
         Uppdaterad: {{ snap.last_check[11:16] if snap.last_check else '—' }}
       </p>
+      <h2 class="section-heading">Ofta eftersökta läkemedel</h2>
 
       {% for p in snap.products %}
         {% set pharmacies = p.pharmacies %}

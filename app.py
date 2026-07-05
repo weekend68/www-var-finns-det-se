@@ -77,8 +77,8 @@ _polling_started = threading.Event()
 def _template_vars():
     og_image = f"{SITE_URL}/og-image.png" if SITE_URL else ""
     desc = (
-        f"Realtidsövervakning av lagerstatus för {len(checker.PRODUCTS)} utvalda läkemedel "
-        "på alla Sveriges apotek. Uppdateras automatiskt."
+        "Lagerstatus för alla läkemedel på Sveriges apotek. "
+        "Är mitt läkemedel restnoterat? Bevaka det — få e-post när det finns igen."
     )
     if SITE_NAME.endswith(".se"):
         name_base, name_tld = SITE_NAME[:-3], ".se"
