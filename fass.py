@@ -1,11 +1,10 @@
 """
 Fass.se API helpers.
 
-Stock checks go through the fass.se reverse-proxy:
+All calls go through the fass.se reverse-proxy:
   https://fass.se/api/content?endpoint=<url-encoded-cms-url>
 
-Medication search and package lookup use apotekskoll.se's public API
-(no authentication required) with local DB as fallback.
+The CMS base is https://cms.fass.se/api/vard/
 """
 
 import json
@@ -15,7 +14,6 @@ import urllib.parse
 import urllib.request
 
 FASS_REFERER = "https://fass.se/health/product/20011130000246/stock-status"
-APOTEKSKOLL_BASE = "https://apotekskoll.se"
 IN_STOCK_STATUSES = {"IN_STOCK", "FEW_IN_STOCK"}
 
 # Simple in-memory search cache (query → (timestamp, results))
@@ -30,18 +28,6 @@ def _proxy_get(path):
         headers={"Referer": FASS_REFERER},
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
-        return json.loads(resp.read())
-
-
-def _apotekskoll_get(path):
-    req = urllib.request.Request(
-        f"{APOTEKSKOLL_BASE}{path}",
-        headers={
-            "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 (compatible; medicinstatus/1.0)",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=10) as resp:
         return json.loads(resp.read())
 
 
@@ -61,8 +47,7 @@ def search_medications(query):
     Search for medications by name. Returns list of:
       {"npl_id": str, "name": str, "form": str}
 
-    Primary: apotekskoll.se public API.
-    Fallback: local DB (seeded medications).
+    Tries Fass CMS first; falls back to local DB (seeded medications).
     """
     q = query.strip()
     if not q or len(q) < 2:
@@ -72,9 +57,17 @@ def search_medications(query):
     if cached and (time.time() - cached[0]) < _CACHE_TTL:
         return cached[1]
 
-    results = _apotekskoll_search(q)
+    results = []
+    try:
+        data = _proxy_get(f"product/search?query={urllib.parse.quote(q)}&pageSize=15")
+        results = _normalize_search(data, q)
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            print(f"  fass search error: {e.code} for '{q}'")
+    except Exception as e:
+        print(f"  fass search error: {e} for '{q}'")
 
-    # Merge DB results so seeded medications always appear
+    # Always merge with DB results so seeded medications are always findable
     db_results = _db_search(q)
     seen_ids = {r["npl_id"] for r in results}
     for r in db_results:
@@ -84,27 +77,6 @@ def search_medications(query):
 
     _search_cache[q] = (time.time(), results)
     return results
-
-
-def _apotekskoll_search(q):
-    """Search medications via apotekskoll.se public API."""
-    try:
-        data = _apotekskoll_get(f"/api/search?q={urllib.parse.quote(q)}")
-        hits = data.get("human-product-index", {}).get("hits", [])
-        results = []
-        for hit in hits[:15]:
-            npl_id = hit.get("nplId", "")
-            trade = hit.get("tradeName", "")
-            strength = hit.get("strength", "")
-            form = hit.get("doseForm", "")
-            if not (npl_id and trade):
-                continue
-            name = f"{trade} {strength}".strip() if strength else trade
-            results.append({"npl_id": str(npl_id), "name": name, "form": form})
-        return results
-    except Exception as e:
-        print(f"  apotekskoll search error: {e}")
-        return []
 
 
 def _db_search(q):
@@ -129,19 +101,40 @@ def _db_search(q):
         return []
 
 
+def _normalize_search(data, query):
+    """Normalize varying Fass API response shapes to a consistent list."""
+    results = []
+
+    # Shape 1: {"products": [...]}
+    items = data if isinstance(data, list) else data.get("products", data.get("items", []))
+
+    for item in items[:15]:
+        npl_id = (
+            item.get("nplId") or item.get("npl_id") or item.get("id") or ""
+        )
+        name = (
+            item.get("productName") or item.get("name") or item.get("label") or ""
+        )
+        form = (
+            item.get("pharmaceuticalForm") or item.get("form") or ""
+        )
+        if npl_id and name:
+            results.append({"npl_id": str(npl_id), "name": name, "form": form})
+
+    # If API returned nothing useful, log raw shape for debugging
+    if not results and data:
+        keys = list(data.keys()) if isinstance(data, dict) else type(data).__name__
+        print(f"  fass search: no results for '{query}', response keys: {keys}")
+
+    return results
+
+
 def get_packages(npl_id):
     """
     Get all available packagings for a medication (identified by nplId).
     Returns list of:
       {"npl_pack_id": str, "name": str, "strength": str, "form": str}
-
-    Primary: apotekskoll.se public API.
-    Fallback: Fass CMS proxy (often 404).
     """
-    packages = _apotekskoll_packages(npl_id)
-    if packages:
-        return packages
-
     try:
         data = _proxy_get(f"product/{npl_id}/packages")
     except Exception as e:
@@ -165,30 +158,6 @@ def get_packages(npl_id):
                 "form": form,
             })
     return packages
-
-
-def _apotekskoll_packages(npl_id):
-    """Get packages via apotekskoll.se public API."""
-    try:
-        data = _apotekskoll_get(f"/api/packages?nplId={urllib.parse.quote(npl_id)}")
-        packages = []
-        items = data if isinstance(data, list) else []
-        for item in items:
-            pack_id = item.get("nplPackId", "")
-            packaging = item.get("packagingName", "")
-            form = item.get("doseForm", "")
-            if not pack_id:
-                continue
-            packages.append({
-                "npl_pack_id": str(pack_id),
-                "name": packaging or form or pack_id,
-                "strength": "",
-                "form": form,
-            })
-        return packages
-    except Exception as e:
-        print(f"  apotekskoll packages error for {npl_id}: {e}")
-        return []
 
 
 def check_stock(npl_pack_id, gln_codes, pharmacy_map):
