@@ -407,7 +407,13 @@ def start_polling():
     print("Hämtar apoteksregister från Läkemedelsverket...")
     with state_lock:
         state["status"] = "Startar — hämtar apoteksregister..."
-    pharmacy_map = fetch_all_pharmacies()
+    pharmacy_map = {}
+    while not pharmacy_map:
+        try:
+            pharmacy_map = fetch_all_pharmacies()
+        except Exception as e:
+            print(f"  Apotekshämtning misslyckades ({e}) — försöker om 30s")
+            time.sleep(30)
     _pharmacy_map = pharmacy_map  # expose for live stock route
     print(f"Hittade {len(pharmacy_map)} apotek i Sverige (Läkemedelsverket)")
     print(f"Pollar var {POLL_INTERVAL // 60} minut(er)\n")

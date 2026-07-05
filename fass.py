@@ -78,7 +78,7 @@ def _fass_search(q):
         hits = data.get("human-product-index", {}).get("hits", [])
         results = []
         for hit in hits[:15]:
-            obj = hit.get("object", {})
+            obj = hit.get("object") or {}
             npl_id = obj.get("nplId") or hit.get("id", "")
             trade = obj.get("tradeName", "")
             strength = obj.get("strength", "")
