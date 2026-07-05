@@ -24,7 +24,7 @@ from zoneinfo import ZoneInfo
 from fass import check_stock, _proxy_post as fass_post
 
 TZ = ZoneInfo("Europe/Stockholm")
-CACHE_FILE = os.getenv("CACHE_FILE", "/tmp/medicinstatus_cache.json")
+CACHE_FILE = os.getenv("CACHE_FILE", "/data/medicinstatus_cache.json")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2")) * 60
 IN_STOCK_STATUSES = {"IN_STOCK", "FEW_IN_STOCK"}
 SHOW_LIMIT = 10

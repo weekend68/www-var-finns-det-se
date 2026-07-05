@@ -120,7 +120,14 @@
     .ph-name { color: #444; }
     .ph-status { font-weight: 600; color: #2a7d2a; }
     .ph-status.few { color: #b07d00; }
-    .ph-more { font-size: 0.75rem; color: #999; padding: 0.2rem 0.5rem; }
+    .ph-details { display: block; margin-top: 0.25rem; }
+    .ph-details summary { font-size: 0.78rem; color: #22D3A5; cursor: pointer;
+                          padding: 0.25rem 0.5rem; list-style: none; }
+    .ph-details summary::before { content: "▸ "; }
+    .ph-details[open] summary::before { content: "▾ "; }
+    .pkg-stock.loading { color: #bbb; }
+    @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+    .pkg-stock.loading { animation: blink 1.4s ease-in-out infinite; }
 
     footer { max-width: 720px; margin: 2rem auto 0; padding: 1rem 1.5rem 1.5rem;
              font-size: 0.75rem; color: #999; line-height: 1.6;
@@ -367,7 +374,7 @@
         <div class="pkg-item">
           <div class="pkg-header">
             <span class="pkg-name">${esc(p.name || p.npl_pack_id)}</span>
-            <span class="pkg-stock ${p.shortage ? 'out' : ''}" id="stock-${esc(p.npl_pack_id)}">${p.shortage ? 'Restnoterat' : '…'}</span>
+            <span class="pkg-stock ${p.shortage ? 'out' : 'loading'}" id="stock-${esc(p.npl_pack_id)}">${p.shortage ? 'Restnoterat' : 'Kollar lager…'}</span>
             <a class="btn-watch" href="/subscribe?npl=${esc(p.npl_pack_id)}">Bevaka</a>
           </div>
           <div class="ph-list" id="ph-${esc(p.npl_pack_id)}"></div>
@@ -389,18 +396,25 @@
             const phEl    = document.getElementById('ph-' + p.npl_pack_id);
             if (!stockEl) return;
             const pharmacies = data.pharmacies || [];
+            const renderPh = ph =>
+              `<div class="ph-item">
+                 <span class="ph-name">${esc(ph.name)}</span>
+                 <span class="ph-status${ph.status === 'FEW_IN_STOCK' ? ' few' : ''}">${ph.status === 'FEW_IN_STOCK' ? 'Få kvar' : 'I lager'}</span>
+               </div>`;
             if (pharmacies.length > 0) {
               stockEl.textContent = pharmacies.length + ' apotek i lager';
               stockEl.className = 'pkg-stock in';
               if (phEl) {
-                const show = pharmacies.slice(0, 5);
-                const rest = pharmacies.length - show.length;
-                phEl.innerHTML = show.map(ph =>
-                  `<div class="ph-item">
-                     <span class="ph-name">${esc(ph.name)}</span>
-                     <span class="ph-status${ph.status === 'FEW_IN_STOCK' ? ' few' : ''}">${ph.status === 'FEW_IN_STOCK' ? 'Få kvar' : 'I lager'}</span>
-                   </div>`).join('')
-                  + (rest > 0 ? `<p class="ph-more">+${rest} apotek till</p>` : '');
+                const first5 = pharmacies.slice(0, 5);
+                const rest   = pharmacies.slice(5);
+                let html = first5.map(renderPh).join('');
+                if (rest.length > 0) {
+                  html += `<details class="ph-details">
+                    <summary>Visa alla ${pharmacies.length} apotek</summary>
+                    ${rest.map(renderPh).join('')}
+                  </details>`;
+                }
+                phEl.innerHTML = html;
               }
             } else {
               stockEl.textContent = 'Restnoterat';
