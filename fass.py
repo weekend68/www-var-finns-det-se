@@ -47,8 +47,7 @@ def search_medications(query):
     Search for medications by name. Returns list of:
       {"npl_id": str, "name": str, "form": str}
 
-    Hits the Fass CMS search endpoint. The exact path may need adjustment
-    depending on what the CMS exposes — check request logs if results are empty.
+    Tries Fass CMS first; falls back to local DB (seeded medications).
     """
     q = query.strip()
     if not q or len(q) < 2:
@@ -58,26 +57,48 @@ def search_medications(query):
     if cached and (time.time() - cached[0]) < _CACHE_TTL:
         return cached[1]
 
+    results = []
     try:
         data = _proxy_get(f"product/search?query={urllib.parse.quote(q)}&pageSize=15")
         results = _normalize_search(data, q)
     except urllib.error.HTTPError as e:
-        if e.code == 404:
-            # Endpoint shape varies — try alternate path
-            try:
-                data = _proxy_get(f"product?name={urllib.parse.quote(q)}&pageSize=15")
-                results = _normalize_search(data, q)
-            except Exception:
-                results = []
-        else:
+        if e.code != 404:
             print(f"  fass search error: {e.code} for '{q}'")
-            results = []
     except Exception as e:
         print(f"  fass search error: {e} for '{q}'")
-        results = []
+
+    # Always merge with DB results so seeded medications are always findable
+    db_results = _db_search(q)
+    seen_ids = {r["npl_id"] for r in results}
+    for r in db_results:
+        if r["npl_id"] not in seen_ids:
+            results.append(r)
+            seen_ids.add(r["npl_id"])
 
     _search_cache[q] = (time.time(), results)
     return results
+
+
+def _db_search(q):
+    """Search seeded medications in local DB (case-insensitive LIKE)."""
+    try:
+        from db import get_db
+        with get_db() as db:
+            rows = db.execute(
+                "SELECT npl_pack_id, name, strength, form FROM medications "
+                "WHERE name LIKE ? ORDER BY name LIMIT 10",
+                [f"%{q}%"],
+            ).fetchall()
+        return [
+            {
+                "npl_id": r["npl_pack_id"],
+                "name": r["name"],
+                "form": r["form"] or "",
+            }
+            for r in rows
+        ]
+    except Exception:
+        return []
 
 
 def _normalize_search(data, query):

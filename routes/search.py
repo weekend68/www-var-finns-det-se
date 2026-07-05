@@ -23,6 +23,25 @@ def api_packages():
     npl_id = request.args.get("nplId", "").strip()
     if not npl_id:
         return jsonify({"error": "nplId required"}), 400
+
+    # npl_pack_id is 14 digits — look up directly in DB, skip Fass packages API
+    if len(npl_id) == 14 and npl_id.isdigit():
+        try:
+            with get_db() as db:
+                med = db.execute(
+                    "SELECT npl_pack_id, name, strength, form FROM medications WHERE npl_pack_id=?",
+                    [npl_id],
+                ).fetchone()
+            if med:
+                return jsonify([{
+                    "npl_pack_id": med["npl_pack_id"],
+                    "name": med["name"],
+                    "strength": med["strength"] or "",
+                    "form": med["form"] or "",
+                }])
+        except Exception:
+            pass
+
     packages = fass.get_packages(npl_id)
     return jsonify(packages)
 
