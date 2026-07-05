@@ -37,5 +37,10 @@
       {% endif %}
     </div>
   </main>
+  {% if umami_event %}
+  <script>document.addEventListener('DOMContentLoaded', function() {
+    if (typeof umami !== 'undefined') umami.track('{{ umami_event }}');
+  });</script>
+  {% endif %}
 </body>
 </html>

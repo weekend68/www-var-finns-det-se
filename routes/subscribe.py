@@ -184,4 +184,5 @@ def confirm(token):
         icon="✅",
         cta_url=f"{SITE_URL}/manage/{manage_token}",
         cta_text="Hantera dina bevakningar",
+        umami_event="prenumeration-bekraftad",
     )

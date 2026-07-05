@@ -55,7 +55,8 @@
       <div class="error">{{ error }}</div>
       {% endif %}
 
-      <form method="POST" action="/subscribe" novalidate>
+      <form method="POST" action="/subscribe" novalidate
+            onsubmit="if(typeof umami!=='undefined') umami.track('prenumeration-skickad', {läkemedel: '{{ med_name|e }}'})">
         <input type="hidden" name="npl_pack_id" value="{{ npl_pack_id }}">
 
         <label for="email">E-postadress</label>

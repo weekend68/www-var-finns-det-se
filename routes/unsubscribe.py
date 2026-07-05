@@ -42,4 +42,5 @@ def unsubscribe(token):
         icon="✅",
         cta_url="/",
         cta_text="Till startsidan",
+        umami_event="avprenumeration",
     )

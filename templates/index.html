@@ -367,6 +367,7 @@
       input.value = name;
       hideDropdown();
       statusCards.style.display = 'none';
+      if (typeof umami !== 'undefined') umami.track('läkemedel-valt', { namn: name });
       resultArea.innerHTML = '<p class="search-msg">Hämtar förpackningar…</p>';
 
       fetch('/api/packages?nplId=' + encodeURIComponent(nplId))
@@ -444,6 +445,16 @@
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+
+    // Track bevaka-clicks
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest('.btn-watch');
+      if (btn && typeof umami !== 'undefined') {
+        const card = btn.closest('.card, .pkg-item');
+        const name = card ? (card.querySelector('h2, .pkg-name') || {}).textContent : '';
+        umami.track('bevaka-klick', { läkemedel: name.trim() });
+      }
+    });
 
     // Reload page every 60s, but only when user is not searching
     setInterval(() => {
