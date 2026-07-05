@@ -160,9 +160,9 @@
           <clipPath id="pill-lh"><rect x="0" y="0" width="18" height="16"/></clipPath>
           <rect x="0" y="0" width="36" height="16" rx="8" fill="#22D3A5" clip-path="url(#pill-lh)"/>
         </svg>
-        <span class="hero-name">
+        <a href="/" class="hero-name" style="text-decoration:none">
           <span class="hero-name-main">{{ name_base }}</span><span class="hero-name-tld">{{ name_tld }}</span>
-        </span>
+        </a>
       </div>
       <p class="hero-tagline">Vilket apotek har ditt läkemedel just nu?</p>
       <p class="hero-desc">
@@ -281,6 +281,7 @@
     input.addEventListener('input', function () {
       clearTimeout(debounce);
       const q = input.value.trim();
+      if (!q) { clearSearch(); return; }
       if (q.length < 2) { hideDropdown(); return; }
       debounce = setTimeout(() => doSearch(q), 250);
     });
