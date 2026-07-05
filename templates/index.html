@@ -389,7 +389,7 @@
       </div>`;
 
       pkgs.forEach(p => {
-        fetch('/api/stock/' + encodeURIComponent(p.npl_pack_id))
+        fetch('/api/stock/' + encodeURIComponent(p.npl_pack_id) + '?name=' + encodeURIComponent(productName))
           .then(r => r.json())
           .then(data => {
             const stockEl = document.getElementById('stock-' + p.npl_pack_id);

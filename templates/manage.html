@@ -45,7 +45,14 @@
       {% for s in subscriptions %}
       <div class="sub-card">
         <div class="sub-info">
-          <div class="sub-name">{{ s.name }}</div>
+          <div class="sub-name">
+            {% if s.name == s.npl_pack_id %}
+              Okänt läkemedel
+              <span style="color:#aaa;font-size:.75rem;font-weight:400">({{ s.npl_pack_id }})</span>
+            {% else %}
+              {{ s.name }}
+            {% endif %}
+          </div>
           <div class="sub-meta">
             Löper ut {{ s.expires_at[:10] }}
             {% if s.last_notified_at %}

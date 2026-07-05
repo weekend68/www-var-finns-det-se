@@ -69,8 +69,8 @@ def api_stock(npl_pack_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
-    # Ensure medication exists in DB so subscriptions can reference it
-    _upsert_medication(npl_pack_id)
+    med_name = request.args.get("name", "").strip()
+    _upsert_medication(npl_pack_id, med_name or None)
 
     return jsonify({
         "npl_pack_id": npl_pack_id,
@@ -80,17 +80,23 @@ def api_stock(npl_pack_id):
     })
 
 
-def _upsert_medication(npl_pack_id):
-    """Ensure a medication row exists so subscriptions can reference it."""
+def _upsert_medication(npl_pack_id, name=None):
+    """Ensure a medication row exists with a real name. Fixes rows where name=npl_pack_id."""
     try:
         with get_db() as db:
-            exists = db.execute(
-                "SELECT 1 FROM medications WHERE npl_pack_id=?", [npl_pack_id]
+            existing = db.execute(
+                "SELECT name FROM medications WHERE npl_pack_id=?", [npl_pack_id]
             ).fetchone()
-            if not exists:
+            if not existing:
                 db.execute(
                     "INSERT OR IGNORE INTO medications (npl_pack_id, name) VALUES (?, ?)",
-                    [npl_pack_id, npl_pack_id],
+                    [npl_pack_id, name or npl_pack_id],
+                )
+                db.commit()
+            elif existing["name"] == npl_pack_id and name and name != npl_pack_id:
+                db.execute(
+                    "UPDATE medications SET name=? WHERE npl_pack_id=?",
+                    [name, npl_pack_id],
                 )
                 db.commit()
     except Exception:

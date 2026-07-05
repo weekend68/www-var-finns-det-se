@@ -14,8 +14,16 @@ SITE_URL = os.getenv("SITE_URL", "").rstrip("/")
 @bp.route("/subscribe", methods=["GET", "POST"])
 def subscribe():
     if request.method == "GET":
-        npl = request.args.get("npl", "")
+        npl = request.args.get("npl", "").strip()
         med_name = next((p["name"] for p in checker.PRODUCTS if p["npl_pack_id"] == npl), "")
+        if not med_name and npl:
+            try:
+                with get_db() as db:
+                    m = db.execute("SELECT name FROM medications WHERE npl_pack_id=?", [npl]).fetchone()
+                if m and m["name"] != npl:
+                    med_name = m["name"]
+            except Exception:
+                pass
         return render_template("subscribe.html", npl_pack_id=npl, med_name=med_name, error=None)
 
     email = request.form.get("email", "").strip().lower()
@@ -24,6 +32,14 @@ def subscribe():
 
     def form_error(msg):
         med_name = next((p["name"] for p in checker.PRODUCTS if p["npl_pack_id"] == npl_pack_id), "")
+        if not med_name and npl_pack_id:
+            try:
+                with get_db() as db:
+                    m = db.execute("SELECT name FROM medications WHERE npl_pack_id=?", [npl_pack_id]).fetchone()
+                if m and m["name"] != npl_pack_id:
+                    med_name = m["name"]
+            except Exception:
+                pass
         return render_template("subscribe.html", npl_pack_id=npl_pack_id, med_name=med_name, error=msg), 400
 
     if not email or "@" not in email or "." not in email.split("@")[-1]:
