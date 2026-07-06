@@ -115,7 +115,8 @@ def subscribe():
     return render_template("message.html",
         title="Kontrollera din e-post",
         message=f"Vi har skickat ett bekräftelsemejl till <strong>{email}</strong>. "
-                "Klicka på länken i mailet för att aktivera bevakningen.",
+                "Klicka på länken i mailet för att aktivera bevakningen. "
+                "<strong>Länken är giltig i 48 timmar</strong> — kolla skräpposten om du inte hittar mailet.",
         icon="✉️",
         cta_url="/",
         cta_text="Tillbaka till startsidan",
