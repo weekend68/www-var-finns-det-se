@@ -62,7 +62,7 @@ def _domain(site_url):
     return (site_url or "medicinstatus.se").replace("https://", "").replace("http://", "").rstrip("/")
 
 
-def send_confirmation(to, token, site_url, medication_name=None, medication_url=None):
+def send_confirmation(to, token, site_url, medication_name=None):
     if not _within_daily_limit():
         return False
     domain = _domain(site_url)
@@ -75,8 +75,7 @@ def send_confirmation(to, token, site_url, medication_name=None, medication_url=
     body = (
         intro
         + f"Bekräfta din e-postadress inom 48 timmar:\n{confirm_url}\n\n"
-        + (f"Se lagerstatus: {medication_url}\n\n" if medication_url else "")
-        + "Om du inte gjort detta kan du ignorera detta mail.\n"
+        + "Om du inte gjort detta kan du ignorera detta e-postmeddelande.\n"
     )
     return bool(_send_raw(to, f"Bekräfta din prenumeration på {domain}", body))
 

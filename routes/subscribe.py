@@ -6,7 +6,6 @@ from flask import Blueprint, redirect, render_template, request, url_for
 import checker
 import mail
 from db import create_token, get_db, get_or_create_token
-from slugs import slugify_medication
 
 bp = Blueprint("subscribe", __name__)
 SITE_URL = os.getenv("SITE_URL", "").rstrip("/")
@@ -102,17 +101,13 @@ def subscribe():
 
         db.commit()
 
-    medication_url = (
-        f"{SITE_URL}/lakemedel/{npl_pack_id}-{slugify_medication(med['name'], med['strength'], med['form'])}"
-        if SITE_URL else None
-    )
     try:
-        mail.send_confirmation(email, token, SITE_URL, medication_name=med["name"], medication_url=medication_url)
+        mail.send_confirmation(email, token, SITE_URL, medication_name=med["name"])
     except Exception as e:
-        print(f"  Bekräftelsemejl misslyckades: {e}")
+        print(f"  Bekräftelse-e-post misslyckades: {e}")
         return render_template("message.html",
             title="Något gick fel",
-            message="Vi kunde inte skicka bekräftelsemailet just nu. "
+            message="Vi kunde inte skicka bekräftelsen just nu. "
                     "Försök igen om en stund — din adress är inte sparad.",
             icon="❌",
             cta_url="/",
@@ -121,9 +116,9 @@ def subscribe():
 
     return render_template("message.html",
         title="Kontrollera din e-post",
-        message=f"Vi har skickat ett bekräftelsemejl till <strong>{email}</strong>. "
-                "Klicka på länken i mailet för att aktivera bevakningen. "
-                "<strong>Länken är giltig i 48 timmar</strong> — kolla skräpposten om du inte hittar mailet.",
+        message=f"Vi har skickat en bekräftelse via e-post till <strong>{email}</strong>. "
+                "Klicka på länken i e-postmeddelandet för att aktivera bevakningen. "
+                "<strong>Länken är giltig i 48 timmar</strong> — kolla skräpposten om du inte hittar det.",
         icon="✉️",
         cta_url="/",
         cta_text="Tillbaka till startsidan",
@@ -188,7 +183,7 @@ def confirm(token):
     return render_template("message.html",
         title="Bevakning aktiverad!",
         message="Din e-postadress är bekräftad och bevakningen är nu aktiv. "
-                "Du får ett mail när läkemedlet finns i lager.",
+                "Du får ett e-postmeddelande när läkemedlet finns i lager.",
         icon="✅",
         cta_url=f"{SITE_URL}/manage/{manage_token}",
         cta_text="Hantera dina bevakningar",
