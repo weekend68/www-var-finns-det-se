@@ -55,6 +55,8 @@ PRODUCTS = [
     {"name": "Estrogel transdermal gel 0,75 mg/dos", "npl_pack_id": "20181129100025", "strength": "0,75 mg/dos",   "form": "gel"},
     {"name": "Lenzetto 1,53 mg/dos transdermal spray (1 × 56 dos)", "npl_pack_id": "20140320100036", "strength": "1,53 mg/dos", "form": "transdermal spray"},
     {"name": "Lenzetto 1,53 mg/dos transdermal spray (3 × 56 dos)", "npl_pack_id": "20160407100353", "strength": "1,53 mg/dos", "form": "transdermal spray"},
+    {"name": "Divigel 0,5 mg gel", "npl_pack_id": "19961001100275", "strength": "0,5 mg/dos", "form": "gel"},
+    {"name": "Divigel 1 mg gel",   "npl_pack_id": "20001018100021", "strength": "1 mg/dos",   "form": "gel"},
 ]
 
 

@@ -29,16 +29,26 @@ def _stock_history(db, npl_pack_id, limit=200):
 
     in_stock = rows[0]["pharmacy_count"] > 0
     since = rows[0]["polled_at"]
+    found_boundary = False
     for r in rows:
         if (r["pharmacy_count"] > 0) != in_stock:
+            found_boundary = True
             break
         since = r["polled_at"]
-    at_least = len(rows) >= limit
+    # "at_least" only means something when we genuinely don't know the exact
+    # boundary: the loop ran through the whole fetched window without finding
+    # a status change, AND that window was capped by `limit` (so there could
+    # be more history before it we didn't fetch). If the loop found the exact
+    # boundary, `since` is precise regardless of how many rows were fetched.
+    at_least = not found_boundary and len(rows) >= limit
 
     days = None
     try:
-        since_dt = datetime.fromisoformat(since)
-        days = (datetime.utcnow() - since_dt).days
+        # polled_at is written as naive LOCAL (Europe/Stockholm) time via
+        # checker.now_local(), not UTC -- must compare against local "now",
+        # not datetime.utcnow(), or the offset can push this negative.
+        since_dt = datetime.fromisoformat(since).replace(tzinfo=checker.TZ)
+        days = (datetime.now(checker.TZ) - since_dt).days
     except ValueError:
         pass
 
