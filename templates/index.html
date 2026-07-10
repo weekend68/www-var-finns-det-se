@@ -60,6 +60,14 @@
     /* main */
     main { flex: 1; padding: 1.5rem; }
     .meta { font-size: 0.8rem; color: #888; margin-bottom: 1.25rem; }
+    .staleness-banner { max-width: 720px; padding: 0.6rem 1rem; border-radius: 6px;
+                         font-size: 0.85rem; margin-bottom: 1.25rem; display: flex;
+                         justify-content: space-between; align-items: center;
+                         gap: 1rem; flex-wrap: wrap; }
+    .staleness-banner a { color: inherit; font-weight: 600; text-decoration: underline; white-space: nowrap; }
+    .staleness-1h { background: #fff8e6; color: #7a5c00; border: 1px solid #f0d98c; }
+    .staleness-3h { background: #fff0e0; color: #8a4b00; border: 1px solid #f0b98c; }
+    .staleness-1d { background: #fde8e8; color: #a12626; border: 1px solid #f0a8a8; }
     .stale { font-size: 0.75rem; color: #aaa; font-weight: normal; }
     .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
             box-shadow: 0 1px 3px rgba(0,0,0,.08); max-width: 720px; }
@@ -220,6 +228,17 @@
       <p class="meta">
         Uppdaterad: {{ snap.last_check[11:16] if snap.last_check else '—' }}
       </p>
+      {% if staleness %}
+      <div class="staleness-banner staleness-{{ staleness }}">
+        <span>
+          {% if staleness == '1d' %}⚠️ Informationen är minst ett dygn gammal.
+          {% elif staleness == '3h' %}⚠️ Informationen är mer än tre timmar gammal.
+          {% else %}ℹ️ Informationen är mer än en timme gammal.
+          {% endif %}
+        </span>
+        <a href="/">Ladda om för färsk information →</a>
+      </div>
+      {% endif %}
       <h2 class="section-heading">Ofta eftersökta läkemedel</h2>
 
       {% for p in snap.products %}
@@ -467,11 +486,6 @@
         umami.track('bevaka-klick', { läkemedel: name.trim() });
       }
     });
-
-    // Reload page every 60s, but only when user is not searching
-    setInterval(() => {
-      if (!input.value.trim()) location.reload();
-    }, 60000);
   })();
   </script>
 

@@ -18,7 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from fass import check_stock, _proxy_post as fass_post
@@ -58,6 +58,27 @@ PRODUCTS = [
     {"name": "Divigel 0,5 mg gel", "npl_pack_id": "19961001100275", "strength": "0,5 mg/dos", "form": "gel"},
     {"name": "Divigel 1 mg gel",   "npl_pack_id": "20001018100021", "strength": "1 mg/dos",   "form": "gel"},
 ]
+
+
+def staleness_tier(timestamp_str):
+    """Classify how stale a "YYYY-MM-DD HH:MM:SS" local-time timestamp
+    (as written by now_local().strftime(...)) is, for surfacing a manual
+    reload prompt instead of blindly auto-reloading the page. Returns
+    None (fresh), "1h", "3h", or "1d"."""
+    if not timestamp_str:
+        return None
+    try:
+        checked_at = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TZ)
+    except ValueError:
+        return None
+    age = datetime.now(TZ) - checked_at
+    if age > timedelta(days=1):
+        return "1d"
+    if age > timedelta(hours=3):
+        return "3h"
+    if age > timedelta(hours=1):
+        return "1h"
+    return None
 
 
 def seed_products():

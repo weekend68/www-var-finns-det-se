@@ -37,6 +37,7 @@ def _template_vars():
         product_count=len(checker.PRODUCTS),
         show_limit=checker.SHOW_LIMIT,
         email_active=bool(os.getenv("RESEND_API_KEY")),
+        staleness=checker.staleness_tier(snap.get("last_check")),
         snap=snap,
     )
 
