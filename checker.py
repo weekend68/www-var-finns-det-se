@@ -1,27 +1,24 @@
 """
-Medicinstatus polling engine — polls fass.se for stock status.
+Varfinnsdet.se polling engine — polls fass.se for stock status.
 Runs as a daemon thread inside the Flask/Gunicorn process (started from app.py).
 
 Optional env vars:
-  NOTIFY_EMAIL      — legacy direct-notification recipient
   RESEND_API_KEY    — API-nyckel från resend.com (gratis, 100 mail/dag)
   POLL_INTERVAL     — minutes between checks (default: 2)
-  CACHE_FILE        — path for persistent state cache (default: /tmp/medicinstatus_cache.json)
-  FROM_EMAIL        — sender address for Resend (default: noreply@medicinstatus.se)
+  CACHE_FILE        — path for persistent state cache (default: /data/medicinstatus_cache.json)
+  FROM_EMAIL        — sender address for Resend (default: noreply@varfinnsdet.se)
 """
 
 import json
 import os
 import threading
 import time
-import urllib.error
-import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from fass import check_stock, _proxy_post as fass_post
+from fass import check_stock
 
 TZ = ZoneInfo("Europe/Stockholm")
 CACHE_FILE = os.getenv("CACHE_FILE", "/data/medicinstatus_cache.json")
@@ -208,7 +205,7 @@ def fetch_all_pharmacies():
         url = f"https://www.lakemedelsverket.se/api/pharmacy/search?pageSize={page_size}&pageIndex={page}"
         req = urllib.request.Request(url, headers={
             "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 (compatible; medicinstatus/1.0)",
+            "User-Agent": "Mozilla/5.0 (compatible; varfinnsdet/1.0)",
         })
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read())
@@ -232,51 +229,6 @@ def fetch_all_pharmacies():
             break
         page += 1
     return pharmacy_map
-
-
-# --- EMAIL via Resend ---
-
-def send_email(newly_available):
-    api_key = os.environ["RESEND_API_KEY"]
-    notify = os.environ["NOTIFY_EMAIL"]
-
-    lines = []
-    for product_name, pharmacies in newly_available:
-        lines.append(f"\n{product_name} — {len(pharmacies)} apotek:")
-        for ph in pharmacies:
-            exch = " (utbytbar vara)" if ph["exchangeable"] else ""
-            lines.append(f"  • {ph['name']}  [{ph['status']}]{exch}")
-
-    body = (
-        "Följande estradiolpreparat finns nu i lager:\n"
-        + "\n".join(lines)
-        + f"\n\nKontrollerat: {now_local().strftime('%Y-%m-%d %H:%M')} (svensk tid)\n"
-        + "https://fass.se/health/product/20011130000246/stock-status"
-    )
-
-    payload = json.dumps({
-        "from": os.getenv("FROM_EMAIL", "apoteksvakt@resend.dev"),
-        "to": [notify],
-        "subject": "🟢 Estradiol i lager på apotek!",
-        "text": body,
-    }).encode()
-
-    req = urllib.request.Request(
-        "https://api.resend.com/emails",
-        data=payload,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (compatible; medicinstatus/1.0)",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            result = json.loads(resp.read())
-        print(f"  Mail skickat till {notify} (id: {result.get('id')})")
-    except urllib.error.HTTPError as e:
-        body = e.read().decode(errors="replace")
-        raise RuntimeError(f"Resend {e.code}: {body}") from e
 
 
 # --- POLLING LOOP ---

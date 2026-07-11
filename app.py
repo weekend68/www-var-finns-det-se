@@ -8,7 +8,7 @@ import checker
 from db import get_db, init_db, list_medications_for_sitemap
 from slugs import slugify_medication
 
-SITE_NAME = os.getenv("SITE_NAME", "medicinstatus.se")
+SITE_NAME = os.getenv("SITE_NAME", "varfinnsdet.se")
 SITE_URL  = os.getenv("SITE_URL", "").rstrip("/")
 
 _polling_started = threading.Event()

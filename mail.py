@@ -15,7 +15,7 @@ def _send_raw(to, subject, text_body):
     if not api_key:
         print(f"  Mail hoppas över (ingen RESEND_API_KEY): {to}")
         return None
-    from_addr = os.getenv("FROM_EMAIL", "noreply@medicinstatus.se")
+    from_addr = os.getenv("FROM_EMAIL", "noreply@varfinnsdet.se")
     payload = json.dumps({
         "from": from_addr,
         "to": [to],
@@ -28,7 +28,7 @@ def _send_raw(to, subject, text_body):
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (compatible; medicinstatus/1.0)",
+            "User-Agent": "Mozilla/5.0 (compatible; varfinnsdet/1.0)",
         },
     )
     try:
@@ -59,7 +59,7 @@ def _within_daily_limit():
 
 
 def _domain(site_url):
-    return (site_url or "medicinstatus.se").replace("https://", "").replace("http://", "").rstrip("/")
+    return (site_url or "varfinnsdet.se").replace("https://", "").replace("http://", "").rstrip("/")
 
 
 def send_confirmation(to, token, site_url, medication_name=None):
