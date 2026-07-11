@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template
 
-from db import get_db
+from db import get_db, get_token
+from responses import invalid_link
 
 bp = Blueprint("unsubscribe", __name__)
 
@@ -8,18 +9,10 @@ bp = Blueprint("unsubscribe", __name__)
 @bp.route("/unsubscribe/<token>")
 def unsubscribe(token):
     with get_db() as db:
-        row = db.execute(
-            "SELECT t.subscriber_id, t.subscription_id, sub.email "
-            "FROM tokens t JOIN subscribers sub ON t.subscriber_id=sub.id "
-            "WHERE t.token=? AND t.type='unsubscribe'",
-            [token],
-        ).fetchone()
+        row = get_token(db, token, "unsubscribe")
 
         if not row:
-            return render_template("message.html",
-                title="Ogiltig länk",
-                message="Länken hittades inte.",
-                icon="❌"), 404
+            return invalid_link()
 
         # Idempotent — deactivate subscription, don't mark token used
         if row["subscription_id"]:
