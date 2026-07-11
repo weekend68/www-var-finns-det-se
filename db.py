@@ -9,11 +9,9 @@ DB_PATH = os.getenv("DB_PATH", "/data/medicinstatus.db")
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS medications (
     npl_pack_id TEXT PRIMARY KEY,
-    npl_id      TEXT,
     name        TEXT NOT NULL,
     strength    TEXT,
     form        TEXT,
-    last_seen_at TEXT,
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -29,7 +27,6 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     subscriber_id    INTEGER NOT NULL REFERENCES subscribers(id),
     npl_pack_id      TEXT NOT NULL REFERENCES medications(npl_pack_id),
-    pharmacy_glns    TEXT,
     created_at       TEXT NOT NULL DEFAULT (datetime('now')),
     expires_at       TEXT NOT NULL,
     last_notified_at TEXT,
@@ -103,7 +100,7 @@ def create_token(db, token_type, subscriber_id, subscription_id=None, ttl_hours=
 
 def get_medication(db, npl_pack_id):
     return db.execute(
-        "SELECT npl_pack_id, npl_id, name, strength, form FROM medications WHERE npl_pack_id=?",
+        "SELECT npl_pack_id, name, strength, form FROM medications WHERE npl_pack_id=?",
         [npl_pack_id],
     ).fetchone()
 
