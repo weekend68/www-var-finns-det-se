@@ -55,8 +55,7 @@
       <div class="error">{{ error }}</div>
       {% endif %}
 
-      <form method="POST" action="/subscribe" novalidate
-            onsubmit="if(typeof umami!=='undefined') umami.track('prenumeration-skickad', {läkemedel: '{{ med_name|e }}'})">
+      <form method="POST" action="/subscribe" novalidate id="subscribe-form" data-med-name="{{ med_name }}">
         <input type="hidden" name="npl_pack_id" value="{{ npl_pack_id }}">
 
         <label for="email">E-postadress</label>
@@ -80,5 +79,12 @@
       <a class="back" href="/">&larr; Tillbaka</a>
     </div>
   </main>
+  <script>
+  document.getElementById('subscribe-form').addEventListener('submit', function() {
+    if (typeof umami !== 'undefined') {
+      umami.track('prenumeration-skickad', { läkemedel: this.dataset.medName });
+    }
+  });
+  </script>
 </body>
 </html>
