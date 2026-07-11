@@ -1,6 +1,5 @@
 from flask import Blueprint, redirect, render_template, request, url_for
 
-from config import SITE_URL
 from db import get_db, get_token, utcnow_str
 from responses import invalid_link
 
@@ -34,7 +33,6 @@ def manage(token):
         token=token,
         email=auth["email"],
         subscriptions=subscriptions,
-        site_url=SITE_URL,
     )
 
 

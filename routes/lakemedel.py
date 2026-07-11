@@ -5,7 +5,7 @@ from flask import Blueprint, redirect, render_template, request
 
 import checker
 import fass
-from config import SITE_URL
+from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
 from db import get_db, get_medication, is_medication_indexable
 from pharmacy_grouping import group_pharmacies_by_omrade, normalize_omrade
 from slugs import medication_url, slugify_medication
@@ -203,5 +203,5 @@ def lakemedel(id_slug):
         show_partner_guide=npl_pack_id in checker.MENOPAUSE_RELATED_IDS,
         canonical_url=canonical_url,
         jsonld=jsonld,
-        site_url=SITE_URL,
+        ttl_days=SUBSCRIPTION_TTL_DAYS,
     )
