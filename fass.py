@@ -199,12 +199,16 @@ def check_stock(npl_pack_id, gln_codes, pharmacy_map):
                     # Some GLNs unknown to Fass — retry in sub-batches of 10
                     for j in range(0, len(batch), 10):
                         sub = batch[j:j + 10]
+                        sub_ok = False
                         for sub_attempt in range(2):
                             try:
                                 results.extend(_proxy_post(f"pharmacy/stock/{npl_pack_id}", sub))
+                                sub_ok = True
                                 break
                             except Exception:
                                 time.sleep(0.3)
+                        if not sub_ok:
+                            failed_glns += len(sub)
                         time.sleep(0.1)
                     ok = True
                     break
