@@ -20,7 +20,11 @@ def normalize_omrade(raw):
 
 
 def _pharmacy_key(ph):
-    return ph.get("gln") or ph.get("name")
+    # Object identity, not a synthetic gln/name key -- two distinct pharmacy
+    # dicts that happen to share a name (or both lack gln) must never collide
+    # here. A collision means only ONE of them lands in nara/region while both
+    # get excluded from rest, silently dropping the other entirely.
+    return id(ph)
 
 
 def _postal_digits(ph):
