@@ -1,3 +1,5 @@
+import re
+
 from flask import Blueprint, jsonify, request
 
 import checker
@@ -5,6 +7,8 @@ import fass
 from db import get_db, get_medication
 
 bp = Blueprint("search", __name__)
+
+_NPL_PACK_ID_RE = re.compile(r"^\d{14}$")
 
 
 @bp.route("/api/search")
@@ -43,6 +47,15 @@ def api_packages():
 
 @bp.route("/api/stock/<npl_pack_id>")
 def api_stock(npl_pack_id):
+    # Unauthenticated, and _upsert_medication below persists whatever ?name=
+    # is supplied -- without this, any caller can plant an arbitrary,
+    # permanent row (garbage id + arbitrary name text) in medications, which
+    # has no pruning path (unlike every other cache in this codebase).
+    # routes/lakemedel.py already only ever reaches its own version of this
+    # insert with a regex-validated 14-digit id; this route lacked the same
+    # guard.
+    if not _NPL_PACK_ID_RE.match(npl_pack_id):
+        return jsonify({"error": "invalid npl_pack_id"}), 400
     try:
         stock = checker.get_stock_info(npl_pack_id)
     except Exception as e:
@@ -55,14 +68,10 @@ def api_stock(npl_pack_id):
         med_name = request.args.get("name", "").strip()
         _upsert_medication(npl_pack_id, med_name or None)
 
-    resp = {
+    return jsonify({
         "npl_pack_id": npl_pack_id,
         "pharmacies": stock["pharmacies"],
-        "cached": cached,
-    }
-    if not cached:
-        resp["note"] = "Samplad koll på apotek — prenumerera för fullständig bevakning"
-    return jsonify(resp)
+    })
 
 
 def _upsert_medication(npl_pack_id, name=None):
