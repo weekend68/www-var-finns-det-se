@@ -2,7 +2,7 @@
 
 Realtidsbevakning av läkemedelslager på Sveriges apotek. Söker du ett läkemedel som är restnoterat kan du sätta upp en bevakning — du får e-post så fort det finns i lager igen.
 
-**Live:** [www.varfinnsdet.se](https://www.varfinnsdet.se)
+**Live:** [varfinnsdet.se](https://varfinnsdet.se)
 
 ---
 
@@ -59,17 +59,21 @@ Polling-loopen körs som en daemon-tråd i samma Gunicorn-process. En worker anv
 ## Filstruktur
 
 ```
-├── app.py              # Flask app-factory, routes för /, /og-image.png, /privacy
+├── app.py              # Flask app-factory, routes för /, /og-image.png, /privacy,
+│                       # /healthz, /robots.txt, /sitemap.xml
 ├── checker.py          # Polling-loop, PRODUCTS-lista, apoteksregister-cache
 ├── db.py               # SQLite-schema och init
 ├── fass.py             # Fass.se API-wrapper: sökning, förpackningar, lagerstatus
 ├── mail.py             # Resend-wrapper och e-postmallar
+├── slugs.py            # Slug-generering för /lakemedel/-URL:er
+├── pharmacy_grouping.py # Gruppering av apotek efter postnummer/närhet
 ├── routes/
 │   ├── search.py       # GET /api/search, /api/packages, /api/stock/:id
 │   ├── subscribe.py    # POST /subscribe, GET /confirm/:token
 │   ├── manage.py       # GET /manage/:token — hantera bevakningar
 │   ├── extend.py       # GET /extend/:token — förläng 30 dagar
 │   ├── unsubscribe.py  # GET /unsubscribe/:token
+│   ├── lakemedel.py    # GET /lakemedel/:id-slug — läkemedelssida
 │   └── log.py          # GET /log — polling-historik
 ├── templates/          # Jinja2-mallar
 └── static/             # Statiska filer (OG-bild m.m.)
@@ -102,7 +106,7 @@ SQLite på Railway persistent volym (`/data/medicinstatus.db`).
 | `SITE_NAME` | Sajt-namn i mallar | `varfinnsdet.se` |
 | `SITE_URL` | Publik URL (utan avslutande /) | — |
 | `DB_PATH` | Sökväg till SQLite-databasen | `/data/medicinstatus.db` |
-| `POLL_INTERVAL` | Minuter mellan pollningar | `10` |
+| `POLL_INTERVAL` | Minuter mellan pollningar | `2` |
 | `CACHE_FILE` | Sökväg för tillstånds-cache | `/data/medicinstatus_cache.json` |
 
 ---
@@ -122,11 +126,11 @@ Utan `RESEND_API_KEY` skickas inga mejl — sajten fungerar i övrigt fullt ut.
 
 ## GDPR
 
-- E-postadresser lagras krypterat i SQLite, aldrig i klartext i loggar.
+- E-postadresser lagras i klartext i SQLite — ingen kryptering i vila eller loggmaskning finns idag.
 - Samtycke inhämtas explicit (double opt-in) med stöd av artikel 6(1)(a) och 9(2)(a) GDPR.
 - Prenumerationer löper ut automatiskt efter 30 dagar.
 - Avregistrering sker via länk i varje mejl — idempotent, kräver inget konto.
-- Integritetspolicy: [www.varfinnsdet.se/privacy](https://www.varfinnsdet.se/privacy)
+- Integritetspolicy: [varfinnsdet.se/privacy](https://varfinnsdet.se/privacy)
 
 ---
 
