@@ -73,11 +73,15 @@ def _sibling_packages(db, med):
     base = (med["name"] or "").strip().split(" ")[0]
     if len(base) < 3:
         return []
+    # Escape LIKE wildcards in case a trade name ever contains a literal % or
+    # _ -- unlikely for Swedish pharmaceutical names, but otherwise those
+    # characters would match arbitrarily more than an exact prefix.
+    escaped_base = base.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
     rows = db.execute(
         "SELECT npl_pack_id, name, strength, form FROM medications "
-        "WHERE name LIKE ? AND npl_pack_id != ? AND name != npl_pack_id "
+        "WHERE name LIKE ? ESCAPE '\\' AND npl_pack_id != ? AND name != npl_pack_id "
         "ORDER BY name LIMIT 10",
-        [f"{base}%", med["npl_pack_id"]],
+        [f"{escaped_base}%", med["npl_pack_id"]],
     ).fetchall()
     return [
         {
