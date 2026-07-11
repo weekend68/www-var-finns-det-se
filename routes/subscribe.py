@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import timedelta
 
 from flask import Blueprint, render_template, request
@@ -5,8 +6,8 @@ from markupsafe import escape
 
 import checker
 import mail
-from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
-from db import create_token, get_db, get_or_create_token, get_token, utcnow_str
+from config import SITE_URL, SUBSCRIPTION_TTL_DAYS, token_url
+from db import create_token, get_db, get_medication, get_or_create_token, get_token, utcnow_str
 from responses import invalid_link
 
 bp = Blueprint("subscribe", __name__)
@@ -17,7 +18,7 @@ def _lookup_med_name(npl_pack_id):
     if not med_name and npl_pack_id:
         try:
             with get_db() as db:
-                m = db.execute("SELECT name FROM medications WHERE npl_pack_id=?", [npl_pack_id]).fetchone()
+                m = get_medication(db, npl_pack_id)
             if m and m["name"] != npl_pack_id:
                 med_name = m["name"]
         except Exception:
@@ -48,25 +49,32 @@ def subscribe():
         return form_error("Inget läkemedel valt.")
 
     with get_db() as db:
-        med = db.execute(
-            "SELECT name, strength, form FROM medications WHERE npl_pack_id=?", [npl_pack_id]
-        ).fetchone()
+        med = get_medication(db, npl_pack_id)
         if not med:
             return render_template("message.html",
                 title="Okänt läkemedel",
                 message="Det valda läkemedlet hittades inte.",
                 icon="❌"), 404
 
-        # Get or create subscriber
+        # Get or create subscriber. A double-submit of this form for a brand
+        # new email can race two requests past the "no existing row" check
+        # before either commits its INSERT -- catch the resulting UNIQUE
+        # violation and fall back to the row the other request just created,
+        # instead of letting it surface as an uncaught 500.
         row = db.execute("SELECT id FROM subscribers WHERE email=?", [email]).fetchone()
         if row:
             subscriber_id = row["id"]
             db.execute("UPDATE subscribers SET deleted_at=NULL WHERE id=?", [subscriber_id])
         else:
-            cur = db.execute("INSERT INTO subscribers (email) VALUES (?)", [email])
-            subscriber_id = cur.lastrowid
+            try:
+                cur = db.execute("INSERT INTO subscribers (email) VALUES (?)", [email])
+                subscriber_id = cur.lastrowid
+            except sqlite3.IntegrityError:
+                row = db.execute("SELECT id FROM subscribers WHERE email=?", [email]).fetchone()
+                subscriber_id = row["id"]
+                db.execute("UPDATE subscribers SET deleted_at=NULL WHERE id=?", [subscriber_id])
 
-        # Create or reactivate subscription
+        # Create or reactivate subscription -- same race/recovery as above.
         expires_at = utcnow_str(timedelta(days=SUBSCRIPTION_TTL_DAYS))
         existing = db.execute(
             "SELECT id FROM subscriptions WHERE subscriber_id=? AND npl_pack_id=?",
@@ -79,11 +87,22 @@ def subscribe():
             )
             subscription_id = existing["id"]
         else:
-            cur = db.execute(
-                "INSERT INTO subscriptions (subscriber_id, npl_pack_id, expires_at) VALUES (?,?,?)",
-                [subscriber_id, npl_pack_id, expires_at],
-            )
-            subscription_id = cur.lastrowid
+            try:
+                cur = db.execute(
+                    "INSERT INTO subscriptions (subscriber_id, npl_pack_id, expires_at) VALUES (?,?,?)",
+                    [subscriber_id, npl_pack_id, expires_at],
+                )
+                subscription_id = cur.lastrowid
+            except sqlite3.IntegrityError:
+                existing = db.execute(
+                    "SELECT id FROM subscriptions WHERE subscriber_id=? AND npl_pack_id=?",
+                    [subscriber_id, npl_pack_id],
+                ).fetchone()
+                subscription_id = existing["id"]
+                db.execute(
+                    "UPDATE subscriptions SET active=1, expires_at=? WHERE id=?",
+                    [expires_at, subscription_id],
+                )
 
         # Invalidate any pending confirm tokens (re-subscribe case)
         db.execute(
@@ -100,9 +119,17 @@ def subscribe():
         db.commit()
 
     try:
-        mail.send_confirmation(email, token, SITE_URL, medication_name=med["name"])
+        sent = mail.send_confirmation(email, token, SITE_URL, medication_name=med["name"])
     except Exception as e:
+        sent = False
         print(f"  Bekräftelse-e-post misslyckades: {e}")
+
+    if not sent:
+        # send_confirmation returns False (daily mail cap reached, no
+        # exception) as well as raising on a hard failure -- either way the
+        # confirm token was already committed above, but if we said "we sent
+        # it" here the subscriber would wait forever for an email that never
+        # went out, with no way to retry.
         return render_template("message.html",
             title="Något gick fel",
             message="Vi kunde inte skicka bekräftelsen just nu. "
@@ -138,7 +165,7 @@ def confirm(token):
                 "ORDER BY expires_at DESC LIMIT 1",
                 [row["subscriber_id"]],
             ).fetchone()
-            cta_url = f"{SITE_URL}/manage/{manage_row['token']}" if manage_row else "/"
+            cta_url = token_url(SITE_URL, "manage", manage_row["token"]) if manage_row else "/"
             return render_template("message.html",
                 title="Redan aktiverad",
                 message="Din bevakning är redan aktiverad.",
@@ -175,7 +202,7 @@ def confirm(token):
         message="Din e-postadress är bekräftad och bevakningen är nu aktiv. "
                 "Du får ett e-postmeddelande när läkemedlet finns i lager.",
         icon="✅",
-        cta_url=f"{SITE_URL}/manage/{manage_token}",
+        cta_url=token_url(SITE_URL, "manage", manage_token),
         cta_text="Hantera dina bevakningar",
         umami_event="prenumeration-bekraftad",
     )
