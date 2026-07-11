@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from flask import Blueprint, render_template
 
-from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
+from config import SITE_URL, SUBSCRIPTION_TTL_DAYS, token_url
 from db import get_db, get_or_create_token, get_token, utcnow_str
 from responses import invalid_link
 
@@ -50,6 +50,6 @@ def extend(token):
         title="Bevakning förlängd!",
         message=f"Din bevakning är förlängd till {new_expires[:10]}.",
         icon="✅",
-        cta_url=f"{SITE_URL}/manage/{manage_token}",
+        cta_url=token_url(SITE_URL, "manage", manage_token),
         cta_text="Hantera dina bevakningar",
     )

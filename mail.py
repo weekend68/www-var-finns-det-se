@@ -3,9 +3,10 @@ import os
 import urllib.error
 import urllib.request
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-TZ = ZoneInfo("Europe/Stockholm")
+from checker import TZ
+from config import token_url
+
 RESEND_URL = "https://api.resend.com/emails"
 DAILY_LIMIT = int(os.getenv("DAILY_MAIL_LIMIT", "90"))
 
@@ -71,7 +72,7 @@ def send_confirmation(to, token, site_url, medication_name=None):
     if not _within_daily_limit():
         return False
     domain = _domain(site_url)
-    confirm_url = f"{site_url}/confirm/{token}"
+    confirm_url = token_url(site_url, "confirm", token)
     intro = (
         f"Du har anmält en bevakning för {medication_name}.\n\n"
         if medication_name else
@@ -102,8 +103,8 @@ def send_notification(to, medication_name, pharmacies, unsubscribe_token, manage
         + "\n".join(lines)
         + "\n\nRing apoteket innan du åker — lagret kan förändras snabbt.\n\n"
         f"Kontrollerat: {checked_at}\n\n"
-        f"Hantera dina bevakningar: {site_url}/manage/{manage_token}\n"
-        f"Avregistrera mig: {site_url}/unsubscribe/{unsubscribe_token}\n"
+        f"Hantera dina bevakningar: {token_url(site_url, 'manage', manage_token)}\n"
+        f"Avregistrera mig: {token_url(site_url, 'unsubscribe', unsubscribe_token)}\n"
         f"Bevakningen löper ut automatiskt {expires_at[:10]}.\n"
     )
     return bool(_send_raw(to, "Ditt bevakade läkemedel finns nu i lager", body))
@@ -114,8 +115,8 @@ def send_renewal_reminder(to, expires_at, extend_token, manage_token, site_url):
         return False
     body = (
         f"Din bevakning på {_domain(site_url)} löper ut {expires_at[:10]}.\n\n"
-        f"Förläng 30 dagar till med ett klick:\n{site_url}/extend/{extend_token}\n\n"
+        f"Förläng 30 dagar till med ett klick:\n{token_url(site_url, 'extend', extend_token)}\n\n"
         "Klickar du inte avslutas bevakningen automatiskt.\n\n"
-        f"Hantera dina bevakningar: {site_url}/manage/{manage_token}\n"
+        f"Hantera dina bevakningar: {token_url(site_url, 'manage', manage_token)}\n"
     )
     return bool(_send_raw(to, "Din bevakning löper ut om 5 dagar", body))
