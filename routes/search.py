@@ -1,10 +1,8 @@
-import json
-
 from flask import Blueprint, jsonify, request
 
 import checker
 import fass
-from db import get_db
+from db import get_db, get_medication
 
 bp = Blueprint("search", __name__)
 
@@ -28,10 +26,7 @@ def api_packages():
     if len(npl_id) == 14 and npl_id.isdigit():
         try:
             with get_db() as db:
-                med = db.execute(
-                    "SELECT npl_pack_id, name, strength, form FROM medications WHERE npl_pack_id=?",
-                    [npl_id],
-                ).fetchone()
+                med = get_medication(db, npl_id)
             if med:
                 return jsonify([{
                     "npl_pack_id": med["npl_pack_id"],
