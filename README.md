@@ -38,6 +38,13 @@ Prenumerationen löper ut automatiskt eller avslutas via länk i mejlet
 
 Prenumerationer förlängs med 30 dagar via en länk i påminnelsemejlet som skickas 5 dagar innan de löper ut.
 
+### Läkemedelssidor och övrigt
+
+- Varje läkemedel har en egen sida (`/lakemedel/<npl_pack_id>-<slug>`) med aktuell lagerstatus, historik och en lista över apotek — självläkande om databasraden saknas eller är en platshållare (se `routes/lakemedel.py`).
+- Apotekslistan kan filtreras på postnummer/närhet ("Nära dig" / "I regionen" / "Övriga apotek i Sverige").
+- Startsidan visar en banner som uppmanar till omladdning när informationen börjar bli gammal (kollas periodiskt via `/healthz` i webbläsaren, inte bara vid sidladdning).
+- På klimakterierelaterade läkemedelssidor och startsidan finns en redaktionell länk till [Partnerguiden.se](https://partnerguiden.se) (samma ägare) — se `checker.MENOPAUSE_RELATED_IDS`.
+
 ---
 
 ## Teknisk stack
