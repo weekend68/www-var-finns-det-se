@@ -5,7 +5,7 @@ import threading
 from flask import Flask, render_template, Response
 
 import checker
-from config import SITE_URL
+from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
 from db import get_db, init_db, list_medications_for_sitemap
 from slugs import medication_url
 
@@ -89,7 +89,7 @@ def create_app():
 
     @app.route("/privacy")
     def privacy():
-        return render_template("privacy.html", site_name=SITE_NAME, site_url=SITE_URL)
+        return render_template("privacy.html", site_name=SITE_NAME, site_url=SITE_URL, ttl_days=SUBSCRIPTION_TTL_DAYS)
 
     @app.route("/robots.txt")
     def robots_txt():
