@@ -46,3 +46,13 @@ def slugify_medication(name, strength=None, form=None):
         if not tokens or tokens[-1] != tok:
             tokens.append(tok)
     return "-".join(tokens)
+
+
+def medication_url(site_url, npl_pack_id, name, strength=None, form=None):
+    """Absolute canonical /lakemedel/ deep link -- the single place that
+    combines slugify_medication() with the URL shape, so app.py's sitemap,
+    checker.py's notification emails and routes/lakemedel.py's own
+    canonical_url all agree by construction instead of independently
+    formatting the same "{site_url}/lakemedel/{id}-{slug}" string."""
+    slug = slugify_medication(name, strength, form)
+    return f"{site_url}/lakemedel/{npl_pack_id}-{slug}"

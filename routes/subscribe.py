@@ -1,4 +1,3 @@
-import os
 from datetime import timedelta
 
 from flask import Blueprint, render_template, request
@@ -6,42 +5,40 @@ from markupsafe import escape
 
 import checker
 import mail
-from db import create_token, get_db, get_or_create_token, utcnow_str
+from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
+from db import create_token, get_db, get_or_create_token, get_token, utcnow_str
+from responses import invalid_link
 
 bp = Blueprint("subscribe", __name__)
-SITE_URL = os.getenv("SITE_URL", "").rstrip("/")
+
+
+def _lookup_med_name(npl_pack_id):
+    med_name = next((p["name"] for p in checker.PRODUCTS if p["npl_pack_id"] == npl_pack_id), "")
+    if not med_name and npl_pack_id:
+        try:
+            with get_db() as db:
+                m = db.execute("SELECT name FROM medications WHERE npl_pack_id=?", [npl_pack_id]).fetchone()
+            if m and m["name"] != npl_pack_id:
+                med_name = m["name"]
+        except Exception:
+            pass
+    return med_name
 
 
 @bp.route("/subscribe", methods=["GET", "POST"])
 def subscribe():
     if request.method == "GET":
         npl = request.args.get("npl", "").strip()
-        med_name = next((p["name"] for p in checker.PRODUCTS if p["npl_pack_id"] == npl), "")
-        if not med_name and npl:
-            try:
-                with get_db() as db:
-                    m = db.execute("SELECT name FROM medications WHERE npl_pack_id=?", [npl]).fetchone()
-                if m and m["name"] != npl:
-                    med_name = m["name"]
-            except Exception:
-                pass
-        return render_template("subscribe.html", npl_pack_id=npl, med_name=med_name, error=None)
+        return render_template("subscribe.html", npl_pack_id=npl, med_name=_lookup_med_name(npl), error=None)
 
     email = request.form.get("email", "").strip().lower()
     npl_pack_id = request.form.get("npl_pack_id", "").strip()
     consent = request.form.get("consent")
 
     def form_error(msg):
-        med_name = next((p["name"] for p in checker.PRODUCTS if p["npl_pack_id"] == npl_pack_id), "")
-        if not med_name and npl_pack_id:
-            try:
-                with get_db() as db:
-                    m = db.execute("SELECT name FROM medications WHERE npl_pack_id=?", [npl_pack_id]).fetchone()
-                if m and m["name"] != npl_pack_id:
-                    med_name = m["name"]
-            except Exception:
-                pass
-        return render_template("subscribe.html", npl_pack_id=npl_pack_id, med_name=med_name, error=msg), 400
+        return render_template(
+            "subscribe.html", npl_pack_id=npl_pack_id, med_name=_lookup_med_name(npl_pack_id), error=msg
+        ), 400
 
     if not email or "@" not in email or "." not in email.split("@")[-1]:
         return form_error("Ogiltig e-postadress.")
@@ -70,7 +67,7 @@ def subscribe():
             subscriber_id = cur.lastrowid
 
         # Create or reactivate subscription
-        expires_at = utcnow_str(timedelta(days=30))
+        expires_at = utcnow_str(timedelta(days=SUBSCRIPTION_TTL_DAYS))
         existing = db.execute(
             "SELECT id FROM subscriptions WHERE subscriber_id=? AND npl_pack_id=?",
             [subscriber_id, npl_pack_id],
@@ -97,8 +94,8 @@ def subscribe():
         # Create confirm token (48h TTL)
         token = create_token(db, "confirm", subscriber_id, subscription_id, ttl_hours=48)
 
-        # Pre-create unsubscribe token for this subscription (idempotent, 30d)
-        get_or_create_token(db, "unsubscribe", subscriber_id, subscription_id, ttl_hours=30 * 24)
+        # Pre-create unsubscribe token for this subscription (idempotent, 30d default TTL)
+        get_or_create_token(db, "unsubscribe", subscriber_id, subscription_id)
 
         db.commit()
 
@@ -129,18 +126,10 @@ def subscribe():
 @bp.route("/confirm/<token>")
 def confirm(token):
     with get_db() as db:
-        row = db.execute(
-            "SELECT t.*, sub.email, sub.confirmed_at "
-            "FROM tokens t JOIN subscribers sub ON t.subscriber_id=sub.id "
-            "WHERE t.token=? AND t.type='confirm'",
-            [token],
-        ).fetchone()
+        row = get_token(db, token, "confirm")
 
         if not row:
-            return render_template("message.html",
-                title="Ogiltig länk",
-                message="Länken hittades inte.",
-                icon="❌"), 404
+            return invalid_link()
 
         if row["used_at"]:
             manage_row = db.execute(
@@ -177,8 +166,8 @@ def confirm(token):
         if row["subscription_id"]:
             db.execute("UPDATE subscriptions SET active=1 WHERE id=?", [row["subscription_id"]])
 
-        # Create manage token (30d)
-        manage_token = get_or_create_token(db, "manage", row["subscriber_id"], None, ttl_hours=30 * 24)
+        # Create manage token (30d default TTL)
+        manage_token = get_or_create_token(db, "manage", row["subscriber_id"], None)
         db.commit()
 
     return render_template("message.html",

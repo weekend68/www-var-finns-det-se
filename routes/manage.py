@@ -1,20 +1,17 @@
-import os
-
 from flask import Blueprint, redirect, render_template, request, url_for
 
-from db import get_db
+from config import SITE_URL
+from db import get_db, get_token, utcnow_str
+from responses import invalid_link
 
 bp = Blueprint("manage", __name__)
-SITE_URL = os.getenv("SITE_URL", "").rstrip("/")
 
 
 def _get_subscriber(db, token):
-    return db.execute(
-        "SELECT t.subscriber_id, sub.email "
-        "FROM tokens t JOIN subscribers sub ON t.subscriber_id=sub.id "
-        "WHERE t.token=? AND t.type='manage' AND t.used_at IS NULL AND t.expires_at > datetime('now')",
-        [token],
-    ).fetchone()
+    row = get_token(db, token, "manage")
+    if not row or row["used_at"] or row["expires_at"] < utcnow_str():
+        return None
+    return row
 
 
 @bp.route("/manage/<token>")
@@ -22,10 +19,7 @@ def manage(token):
     with get_db() as db:
         auth = _get_subscriber(db, token)
         if not auth:
-            return render_template("message.html",
-                title="Ogiltig länk",
-                message="Länken hittades inte eller har gått ut.",
-                icon="❌"), 404
+            return invalid_link("Länken hittades inte eller har gått ut.")
 
         subs = db.execute(
             "SELECT s.id, s.npl_pack_id, s.expires_at, s.last_notified_at, s.active, m.name "
@@ -50,10 +44,7 @@ def remove(token):
     with get_db() as db:
         auth = _get_subscriber(db, token)
         if not auth:
-            return render_template("message.html",
-                title="Ogiltig länk",
-                message="Länken hittades inte eller har gått ut.",
-                icon="❌"), 403
+            return invalid_link("Länken hittades inte eller har gått ut.", status=403)
 
         if subscription_id:
             db.execute(

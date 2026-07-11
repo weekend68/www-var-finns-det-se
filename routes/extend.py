@@ -1,29 +1,21 @@
-import os
 from datetime import timedelta
 
 from flask import Blueprint, render_template
 
-from db import get_db, get_or_create_token, utcnow_str
+from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
+from db import get_db, get_or_create_token, get_token, utcnow_str
+from responses import invalid_link
 
 bp = Blueprint("extend", __name__)
-SITE_URL = os.getenv("SITE_URL", "").rstrip("/")
 
 
 @bp.route("/extend/<token>")
 def extend(token):
     with get_db() as db:
-        row = db.execute(
-            "SELECT t.*, sub.email "
-            "FROM tokens t JOIN subscribers sub ON t.subscriber_id=sub.id "
-            "WHERE t.token=? AND t.type='extend'",
-            [token],
-        ).fetchone()
+        row = get_token(db, token, "extend")
 
         if not row:
-            return render_template("message.html",
-                title="Ogiltig länk",
-                message="Länken hittades inte.",
-                icon="❌"), 404
+            return invalid_link()
 
         if row["used_at"]:
             return render_template("message.html",
@@ -43,7 +35,7 @@ def extend(token):
                 cta_text="Till startsidan",
             ), 410
 
-        new_expires = utcnow_str(timedelta(days=30))
+        new_expires = utcnow_str(timedelta(days=SUBSCRIPTION_TTL_DAYS))
         db.execute("UPDATE tokens SET used_at=datetime('now') WHERE token=?", [token])
         if row["subscription_id"]:
             db.execute(
@@ -51,7 +43,7 @@ def extend(token):
                 [new_expires, row["subscription_id"]],
             )
 
-        manage_token = get_or_create_token(db, "manage", row["subscriber_id"], None, ttl_hours=30 * 24)
+        manage_token = get_or_create_token(db, "manage", row["subscriber_id"], None)
         db.commit()
 
     return render_template("message.html",

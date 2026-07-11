@@ -4,6 +4,8 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 
+from config import SUBSCRIPTION_TTL_DAYS
+
 DB_PATH = os.getenv("DB_PATH", "/data/medicinstatus.db")
 
 _SCHEMA = """
@@ -135,6 +137,20 @@ def get_medication(db, npl_pack_id):
     ).fetchone()
 
 
+def get_token(db, token, token_type):
+    """Shared token lookup used by every /confirm, /extend, /unsubscribe and
+    /manage route -- selects t.* plus the subscriber's email/confirmed_at so
+    it covers what each of those call sites needs. Callers decide for
+    themselves how to treat used_at/expires_at, since each route's own
+    used/expired messaging differs."""
+    return db.execute(
+        "SELECT t.*, sub.email, sub.confirmed_at "
+        "FROM tokens t JOIN subscribers sub ON t.subscriber_id=sub.id "
+        "WHERE t.token=? AND t.type=?",
+        [token, token_type],
+    ).fetchone()
+
+
 def is_medication_indexable(db, npl_pack_id):
     """A medication is only worth indexing (sitemap + index,follow) once it has
     at least one confirmed subscription, ever — not merely having been searched.
@@ -161,7 +177,7 @@ def list_medications_for_sitemap(db):
     ).fetchall()
 
 
-def get_or_create_token(db, token_type, subscriber_id, subscription_id=None, ttl_hours=30 * 24):
+def get_or_create_token(db, token_type, subscriber_id, subscription_id=None, ttl_hours=SUBSCRIPTION_TTL_DAYS * 24):
     """Return an existing valid token of this type, or create a new one."""
     if subscription_id is not None:
         row = db.execute(

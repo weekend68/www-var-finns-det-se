@@ -5,11 +5,11 @@ import threading
 from flask import Flask, render_template, Response
 
 import checker
+from config import SITE_URL
 from db import get_db, init_db, list_medications_for_sitemap
-from slugs import slugify_medication
+from slugs import medication_url
 
 SITE_NAME = os.getenv("SITE_NAME", "varfinnsdet.se")
-SITE_URL  = os.getenv("SITE_URL", "").rstrip("/")
 
 _polling_started = threading.Event()
 
@@ -103,8 +103,7 @@ def create_app():
             meds = list_medications_for_sitemap(db)
         urls = [SITE_URL + "/"] if SITE_URL else ["/"]
         for m in meds:
-            slug = slugify_medication(m["name"], m["strength"], m["form"])
-            urls.append(f"{SITE_URL}/lakemedel/{m['npl_pack_id']}-{slug}")
+            urls.append(medication_url(SITE_URL, m["npl_pack_id"], m["name"], m["strength"], m["form"]))
         xml = render_template("sitemap.xml", urls=urls)
         return Response(xml, mimetype="application/xml")
 

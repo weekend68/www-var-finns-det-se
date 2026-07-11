@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from config import SITE_URL
 from fass import check_stock
 
 TZ = ZoneInfo("Europe/Stockholm")
@@ -452,21 +453,19 @@ def _notify_subscribers(npl_pack_id, medication_name, pharmacies):
     try:
         import mail
         from db import get_db, get_medication, get_or_create_token
-        from slugs import slugify_medication
+        from slugs import medication_url as build_medication_url
     except ImportError:
         return
 
-    site_url = os.getenv("SITE_URL", "").rstrip("/")
     try:
         with get_db() as db:
-            # Build the deep link from the same (name, strength, form) fields
-            # routes/lakemedel.py uses for its canonical slug, so the emailed
-            # URL matches the canonical one and never needs a redirect.
+            # Build the deep link via the same shared helper routes/lakemedel.py
+            # uses for its canonical slug, so the emailed URL matches the
+            # canonical one and never needs a redirect.
             medication_url = None
             med = get_medication(db, npl_pack_id)
-            if site_url and med:
-                slug = slugify_medication(med["name"], med["strength"], med["form"])
-                medication_url = f"{site_url}/lakemedel/{npl_pack_id}-{slug}"
+            if SITE_URL and med:
+                medication_url = build_medication_url(SITE_URL, npl_pack_id, med["name"], med["strength"], med["form"])
 
             subs = db.execute("""
                 SELECT s.id, s.expires_at, s.last_notified_at, sub.email, sub.id AS sub_id
@@ -483,14 +482,14 @@ def _notify_subscribers(npl_pack_id, medication_name, pharmacies):
                     if (datetime.utcnow() - last).total_seconds() < 3600:
                         continue
 
-                unsub_token = get_or_create_token(db, "unsubscribe", sub["sub_id"], sub["id"], ttl_hours=30 * 24)
-                manage_token = get_or_create_token(db, "manage", sub["sub_id"], None, ttl_hours=30 * 24)
+                unsub_token = get_or_create_token(db, "unsubscribe", sub["sub_id"], sub["id"])
+                manage_token = get_or_create_token(db, "manage", sub["sub_id"], None)
                 db.commit()
 
                 try:
                     sent = mail.send_notification(
                         sub["email"], medication_name, pharmacies,
-                        unsub_token, manage_token, sub["expires_at"], site_url,
+                        unsub_token, manage_token, sub["expires_at"], SITE_URL,
                         medication_url=medication_url,
                     )
                 except Exception as e:
@@ -521,7 +520,6 @@ def _send_renewal_reminders():
     except ImportError:
         return
 
-    site_url = os.getenv("SITE_URL", "").rstrip("/")
     try:
         with get_db() as db:
             subs = db.execute("""
@@ -539,11 +537,11 @@ def _send_renewal_reminders():
 
             for sub in subs:
                 extend_token = create_token(db, "extend", sub["sub_id"], sub["id"], ttl_hours=7 * 24)
-                manage_token = get_or_create_token(db, "manage", sub["sub_id"], None, ttl_hours=30 * 24)
+                manage_token = get_or_create_token(db, "manage", sub["sub_id"], None)
 
                 try:
                     sent = mail.send_renewal_reminder(
-                        sub["email"], sub["expires_at"], extend_token, manage_token, site_url,
+                        sub["email"], sub["expires_at"], extend_token, manage_token, SITE_URL,
                     )
                 except Exception as e:
                     sent = False

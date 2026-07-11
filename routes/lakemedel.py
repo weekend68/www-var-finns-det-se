@@ -1,4 +1,3 @@
-import os
 import re
 from datetime import datetime
 
@@ -6,12 +5,12 @@ from flask import Blueprint, redirect, render_template, request
 
 import checker
 import fass
+from config import SITE_URL
 from db import get_db, get_medication, is_medication_indexable
 from pharmacy_grouping import group_pharmacies_by_omrade, normalize_omrade
-from slugs import slugify_medication
+from slugs import medication_url, slugify_medication
 
 bp = Blueprint("lakemedel", __name__)
-SITE_URL = os.getenv("SITE_URL", "").rstrip("/")
 
 # lakemedel.html must stay strictly informational (availability facts only).
 # No promotional/purchase-inducing language ("köp nu", price comparisons,
@@ -165,7 +164,7 @@ def lakemedel(id_slug):
     omrade = normalize_omrade(request.args.get("omrade", ""))
     nara, region, rest = group_pharmacies_by_omrade(pharmacies, omrade)
 
-    canonical_url = f"{SITE_URL}/lakemedel/{npl_pack_id}-{canonical_slug}"
+    canonical_url = medication_url(SITE_URL, npl_pack_id, med["name"], med["strength"], med["form"])
 
     offer = {"@type": "Offer", "url": canonical_url}
     if not stock_unknown:
