@@ -14,7 +14,7 @@ En bakgrundstråd körs kontinuerligt och hämtar lagerstatus för alla bevakade
 
 1. Apoteksregistret (ca 1 450 apotek med GLN-koder) hämtas från LMV (Läkemedelsverket) vid uppstart och sparas i databasen för omedelbar tillgång vid omstart.
 2. Varje polling-cykel kontrollerar lagerstatus för de hårdkodade standardläkemedlen samt alla läkemedel som användare aktivt bevakar.
-3. Kontrollen sker i parallella trådar (ett API-anrop per läkemedel) mot Fass pharmacy stock-API:t.
+3. Kontrollen sker i parallella trådar (en tråd per läkemedel) mot Fass pharmacy stock-API:t — inom varje tråd batchas apoteken i grupper om 50 GLN-koder, så det blir flera anrop per läkemedel, inte ett enda.
 4. Om ett läkemedel går från restnoterat till i lager skickas e-post till alla prenumeranter för det läkemedlet.
 5. För att undvika falska notiser vid tillfälliga API-fel krävs att ett nollresultat upprepas två gånger i rad innan ett läkemedel markeras som utgånget.
 
