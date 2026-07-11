@@ -45,16 +45,21 @@ def _within_daily_limit():
     from db import get_db
     today = datetime.now(TZ).strftime("%Y-%m-%d")
     with get_db() as db:
-        row = db.execute("SELECT count FROM daily_mail_count WHERE date=?", [today]).fetchone()
-        count = row["count"] if row else 0
-        if count >= DAILY_LIMIT:
-            print(f"  Daglig mailgräns nådd ({count}/{DAILY_LIMIT})")
-            return False
-        if row:
-            db.execute("UPDATE daily_mail_count SET count=count+1 WHERE date=?", [today])
-        else:
-            db.execute("INSERT INTO daily_mail_count(date,count) VALUES(?,1)", [today])
+        # Atomic check-and-increment in a single statement -- a separate
+        # SELECT-then-UPDATE lets two threads (the poll loop + a request
+        # thread, under gunicorn --threads 4) both read the same count,
+        # both pass the < DAILY_LIMIT check, and both write, letting the
+        # daily cap be exceeded.
+        row = db.execute(
+            "INSERT INTO daily_mail_count (date, count) VALUES (?, 1) "
+            "ON CONFLICT(date) DO UPDATE SET count = count + 1 WHERE count < ? "
+            "RETURNING count",
+            [today, DAILY_LIMIT],
+        ).fetchone()
         db.commit()
+    if row is None:
+        print(f"  Daglig mailgräns nådd ({DAILY_LIMIT}/{DAILY_LIMIT})")
+        return False
     return True
 
 
