@@ -1,9 +1,9 @@
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from flask import Blueprint, render_template
 
-from db import get_db, get_or_create_token
+from db import get_db, get_or_create_token, utcnow_str
 
 bp = Blueprint("extend", __name__)
 SITE_URL = os.getenv("SITE_URL", "").rstrip("/")
@@ -34,7 +34,7 @@ def extend(token):
                 cta_text="Till startsidan",
             )
 
-        if row["expires_at"] < datetime.utcnow().isoformat():
+        if row["expires_at"] < utcnow_str():
             return render_template("message.html",
                 title="Länken har gått ut",
                 message="Förlängningslänken har gått ut. Prenumerera igen om du vill fortsätta bevaka.",
@@ -43,7 +43,7 @@ def extend(token):
                 cta_text="Till startsidan",
             ), 410
 
-        new_expires = (datetime.utcnow() + timedelta(days=30)).isoformat()
+        new_expires = utcnow_str(timedelta(days=30))
         db.execute("UPDATE tokens SET used_at=datetime('now') WHERE token=?", [token])
         if row["subscription_id"]:
             db.execute(

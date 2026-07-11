@@ -1,12 +1,12 @@
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from flask import Blueprint, render_template, request
 from markupsafe import escape
 
 import checker
 import mail
-from db import create_token, get_db, get_or_create_token
+from db import create_token, get_db, get_or_create_token, utcnow_str
 
 bp = Blueprint("subscribe", __name__)
 SITE_URL = os.getenv("SITE_URL", "").rstrip("/")
@@ -70,7 +70,7 @@ def subscribe():
             subscriber_id = cur.lastrowid
 
         # Create or reactivate subscription
-        expires_at = (datetime.utcnow() + timedelta(days=30)).isoformat()
+        expires_at = utcnow_str(timedelta(days=30))
         existing = db.execute(
             "SELECT id FROM subscriptions WHERE subscriber_id=? AND npl_pack_id=?",
             [subscriber_id, npl_pack_id],
@@ -158,7 +158,7 @@ def confirm(token):
                 cta_text="Hantera dina bevakningar",
             )
 
-        if row["expires_at"] < datetime.utcnow().isoformat():
+        if row["expires_at"] < utcnow_str():
             return render_template("message.html",
                 title="Länken har gått ut",
                 message="Bekräftelselänken gäller i 48 timmar och har nu gått ut. "

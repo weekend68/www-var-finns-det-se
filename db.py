@@ -88,9 +88,23 @@ def get_db():
         con.close()
 
 
+def utcnow_str(delta=None):
+    """UTC 'now' (optionally offset by a timedelta) as TEXT in the same
+    space-separated, second-precision format SQLite's own datetime('now')
+    produces. Never store datetime.utcnow().isoformat() in a column that's
+    compared against datetime('now') in SQL, or against this function in
+    Python -- isoformat()'s 'T' separator sorts after a space, so it always
+    compares as "later" than a same-day datetime('now')/utcnow_str() value,
+    letting expired tokens/subscriptions pass expiry checks for up to ~24h."""
+    dt = datetime.utcnow()
+    if delta is not None:
+        dt += delta
+    return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def create_token(db, token_type, subscriber_id, subscription_id=None, ttl_hours=48):
     token = str(uuid.uuid4())
-    expires = (datetime.utcnow() + timedelta(hours=ttl_hours)).isoformat()
+    expires = utcnow_str(timedelta(hours=ttl_hours))
     db.execute(
         "INSERT INTO tokens (token,type,subscriber_id,subscription_id,expires_at) VALUES (?,?,?,?,?)",
         [token, token_type, subscriber_id, subscription_id, expires],
