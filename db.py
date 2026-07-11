@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 );
 
 CREATE INDEX IF NOT EXISTS subscriptions_npl_pack_id ON subscriptions (npl_pack_id);
+CREATE INDEX IF NOT EXISTS subscriptions_active_expires ON subscriptions (active, expires_at);
 
 CREATE TABLE IF NOT EXISTS tokens (
     token           TEXT PRIMARY KEY,

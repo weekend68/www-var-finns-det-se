@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import fass
 from config import SITE_URL
 from fass import check_stock
 
@@ -29,7 +30,6 @@ POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2")) * 60
 # retired/renamed npl_pack_id) otherwise keeps serving its last successful
 # result forever, with nothing but a growing "checked_at" to betray it.
 STALE_AFTER = POLL_INTERVAL * 3
-IN_STOCK_STATUSES = {"IN_STOCK", "FEW_IN_STOCK"}
 SHOW_LIMIT = 10
 
 # Populated by start_polling(); readable by routes for live stock checks
@@ -270,13 +270,18 @@ def lock_for(npl_pack_id):
     get_stock_info()'s live check and routes/lakemedel.py's self-healing
     name lookup share this, so a burst of concurrent requests for the same
     never-before-seen medication serializes into one Fass call instead of
-    a thundering herd."""
+    a thundering herd. Entries are pruned in polling_loop() -- routes/
+    lakemedel.py accepts any 14-digit id_slug, including ones that don't
+    exist, so without pruning this grows one entry per distinct id ever
+    requested (bots/crawlers included), not just the finite real catalog."""
     with _stock_fetch_locks_lock:
-        lock = _stock_fetch_locks.get(npl_pack_id)
-        if lock is None:
-            lock = threading.Lock()
-            _stock_fetch_locks[npl_pack_id] = lock
-        return lock
+        entry = _stock_fetch_locks.get(npl_pack_id)
+        if entry is None:
+            entry = [threading.Lock(), time.time()]
+            _stock_fetch_locks[npl_pack_id] = entry
+        else:
+            entry[1] = time.time()
+        return entry[0]
 
 
 def get_stock_info(npl_pack_id, sample_size=300):
@@ -443,6 +448,24 @@ def polling_loop(prev_in_stock):
         now_ts = time.time()
         for stale_id in [k for k, (ts, _) in list(_live_stock_cache.items()) if now_ts - ts > STALE_AFTER]:
             _live_stock_cache.pop(stale_id, None)
+
+        # _stock_fetch_locks isn't scoped to active_ids at all (it also
+        # guards routes/lakemedel.py's self-healing lookup for arbitrary
+        # 14-digit ids, valid or not) -- only prune locks old enough AND
+        # currently unheld, so an in-progress request's lock is never
+        # pulled out from under it.
+        with _stock_fetch_locks_lock:
+            stale_locks = [
+                k for k, (lock, ts) in _stock_fetch_locks.items()
+                if now_ts - ts > STALE_AFTER and not lock.locked()
+            ]
+            for stale_id in stale_locks:
+                del _stock_fetch_locks[stale_id]
+
+        # fass.py's own search/packages caches and per-key locks have the
+        # same unbounded-growth shape, one entry per distinct query string
+        # or medication id ever requested.
+        fass.prune_caches()
 
         save_cache(prev_in_stock)
         print(f"  Koll tog {elapsed:.0f}s, sover {sleep_time:.0f}s till nästa")
