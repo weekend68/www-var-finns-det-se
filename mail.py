@@ -68,9 +68,9 @@ def send_confirmation(to, token, site_url, medication_name=None):
     domain = _domain(site_url)
     confirm_url = f"{site_url}/confirm/{token}"
     intro = (
-        f"Du har anmält en bevakning på {domain} för {medication_name}.\n\n"
+        f"Du har anmält en bevakning för {medication_name}.\n\n"
         if medication_name else
-        f"Du har anmält en bevakning på {domain}.\n\n"
+        "Du har anmält en bevakning.\n\n"
     )
     body = (
         intro
