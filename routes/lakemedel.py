@@ -13,6 +13,12 @@ from slugs import slugify_medication
 bp = Blueprint("lakemedel", __name__)
 SITE_URL = os.getenv("SITE_URL", "").rstrip("/")
 
+# lakemedel.html must stay strictly informational (availability facts only).
+# No promotional/purchase-inducing language ("köp nu", price comparisons,
+# urgency framing) -- several tracked products are prescription-only, and
+# Swedish law (Läkemedelslagen 2 kap.) restricts marketing of prescription
+# drugs to the public.
+
 _ID_SLUG_RE = re.compile(r"^(\d{14})(?:-(.*))?$")
 
 
