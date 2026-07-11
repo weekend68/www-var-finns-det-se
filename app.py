@@ -54,6 +54,17 @@ def _template_vars():
 def create_app():
     app = Flask(__name__)
 
+    @app.after_request
+    def set_referrer_policy(response):
+        # Token-bearing pages (/manage/<token>, /unsubscribe/<token>,
+        # /extend/<token>) load a third-party script (Umami) as a
+        # subresource. Modern browsers already default to
+        # strict-origin-when-cross-origin (stripping the path, and thus
+        # the token, before sending Referer cross-origin), but set it
+        # explicitly rather than relying on a browser default.
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        return response
+
     @app.context_processor
     def inject_globals():
         if SITE_NAME.endswith(".se"):
