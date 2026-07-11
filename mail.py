@@ -85,18 +85,23 @@ def send_confirmation(to, token, site_url, medication_name=None):
     return bool(_send_raw(to, f"Bekräfta din prenumeration på {domain}", body))
 
 
-def send_notification(to, medication_name, pharmacies, unsubscribe_token, manage_token, expires_at, site_url, medication_url=None):
+def send_notification(to, medication_name, pharmacies, unsubscribe_token, manage_token, expires_at, site_url, medication_url=None, checked_at=None):
     if not _within_daily_limit():
         return False
     lines = [f"• {ph['name']}" for ph in pharmacies[:20]]
     if len(pharmacies) > 20:
         lines.append(f"... och {len(pharmacies) - 20} fler apotek")
+    # Reuse the actual poll's timestamp when the caller has it -- generating
+    # a fresh datetime.now() per recipient means a popular medication with
+    # many subscribers shows a slightly different "Kontrollerat" time in
+    # each email, even though they're all reporting the same poll result.
+    checked_at = checked_at or datetime.now(TZ).strftime("%Y-%m-%d %H:%M")
     body = (
         f"{medication_name} finns nu i lager på {len(pharmacies)} apotek i Sverige.\n\n"
         + (f"Se lagerstatus och alla apotek: {medication_url}\n\n" if medication_url else "")
         + "\n".join(lines)
         + "\n\nRing apoteket innan du åker — lagret kan förändras snabbt.\n\n"
-        f"Kontrollerat: {datetime.now(TZ).strftime('%Y-%m-%d %H:%M')}\n\n"
+        f"Kontrollerat: {checked_at}\n\n"
         f"Hantera dina bevakningar: {site_url}/manage/{manage_token}\n"
         f"Avregistrera mig: {site_url}/unsubscribe/{unsubscribe_token}\n"
         f"Bevakningen löper ut automatiskt {expires_at[:10]}.\n"

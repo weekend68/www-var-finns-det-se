@@ -407,7 +407,7 @@ def polling_loop(prev_in_stock):
 
         if newly_available:
             for name, pharmacies, npl_pack_id in newly_available:
-                _notify_subscribers(npl_pack_id, name, pharmacies)
+                _notify_subscribers(npl_pack_id, name, pharmacies, checked_at_str)
 
         _send_renewal_reminders()
         _cleanup_old_tokens()
@@ -449,7 +449,7 @@ def polling_loop(prev_in_stock):
         time.sleep(sleep_time)
 
 
-def _notify_subscribers(npl_pack_id, medication_name, pharmacies):
+def _notify_subscribers(npl_pack_id, medication_name, pharmacies, checked_at):
     try:
         import mail
         from db import get_db, get_medication, get_or_create_token
@@ -490,7 +490,7 @@ def _notify_subscribers(npl_pack_id, medication_name, pharmacies):
                     sent = mail.send_notification(
                         sub["email"], medication_name, pharmacies,
                         unsub_token, manage_token, sub["expires_at"], SITE_URL,
-                        medication_url=medication_url,
+                        medication_url=medication_url, checked_at=checked_at,
                     )
                 except Exception as e:
                     sent = False
