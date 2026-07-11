@@ -38,16 +38,7 @@
             color: #888; text-decoration: none; }
     .back:hover { color: #555; }
   </style>
-  <script defer src="https://cloud.umami.is/script.js" data-website-id="596e7965-8601-4307-8131-a147d8dd0721" data-auto-track="false"></script>
-  <script>
-  document.addEventListener("DOMContentLoaded", function() {
-    if (typeof umami === "undefined") return;
-    var path = window.location.pathname.replace(
-      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "[token]"
-    );
-    umami.track(function(p) { return Object.assign({}, p, { url: path }); });
-  });
-  </script>
+  {% include "_umami.html" %}
 </head>
 <body>
   <header class="hero">
