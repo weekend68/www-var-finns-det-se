@@ -8,17 +8,53 @@ The CMS base is https://cms.fass.se/api/vard/
 """
 
 import json
+import threading
 import time
-import urllib.error
 import urllib.parse
 import urllib.request
 
 FASS_REFERER = "https://fass.se/health/product/20011130000246/stock-status"
 IN_STOCK_STATUSES = {"IN_STOCK", "FEW_IN_STOCK"}
 
-# Simple in-memory search cache (query → (timestamp, results))
+# Simple in-memory caches: query/npl_id -> (timestamp, results)
 _search_cache: dict = {}
+_packages_cache: dict = {}
 _CACHE_TTL = 300  # seconds
+
+# Per-key locks (shared by search and packages, keys prefixed to avoid
+# collisions) so a burst of concurrent requests for the same not-yet-cached
+# query/medication serializes into one Fass call instead of a thundering
+# herd -- mirrors checker.lock_for()'s per-npl_pack_id lock for stock checks.
+_locks: dict = {}
+_locks_guard = threading.Lock()
+
+
+def _lock_for(key):
+    with _locks_guard:
+        entry = _locks.get(key)
+        if entry is None:
+            entry = [threading.Lock(), time.time()]
+            _locks[key] = entry
+        else:
+            entry[1] = time.time()
+        return entry[0]
+
+
+def prune_caches():
+    """Called periodically by checker.py's poll loop. _search_cache and
+    _packages_cache are only ever checked for freshness on a hit, never
+    swept -- without this they grow forever, one entry per distinct query
+    string or medication id ever requested. Only prunes locks that are
+    currently unheld, so an in-progress request's lock is never pulled out
+    from under it."""
+    now = time.time()
+    for cache in (_search_cache, _packages_cache):
+        for key in [k for k, (ts, _) in cache.items() if now - ts >= _CACHE_TTL]:
+            cache.pop(key, None)
+    with _locks_guard:
+        stale = [k for k, (lock, ts) in _locks.items() if now - ts >= _CACHE_TTL and not lock.locked()]
+        for k in stale:
+            del _locks[k]
 
 
 def _proxy_get(path):
@@ -58,17 +94,24 @@ def search_medications(query):
     if cached and (time.time() - cached[0]) < _CACHE_TTL:
         return cached[1]
 
-    results = _fass_search(q)
+    with _lock_for(f"search:{q}"):
+        # Re-check inside the lock -- another thread may have just
+        # populated it while we were waiting.
+        cached = _search_cache.get(q)
+        if cached and (time.time() - cached[0]) < _CACHE_TTL:
+            return cached[1]
 
-    db_results = _db_search(q)
-    seen_ids = {r["npl_id"] for r in results}
-    for r in db_results:
-        if r["npl_id"] not in seen_ids:
-            results.append(r)
-            seen_ids.add(r["npl_id"])
+        results = _fass_search(q)
 
-    _search_cache[q] = (time.time(), results)
-    return results
+        db_results = _db_search(q)
+        seen_ids = {r["npl_id"] for r in results}
+        for r in db_results:
+            if r["npl_id"] not in seen_ids:
+                results.append(r)
+                seen_ids.add(r["npl_id"])
+
+        _search_cache[q] = (time.time(), results)
+        return results
 
 
 def _fass_search(q):
@@ -97,11 +140,17 @@ def _db_search(q):
     """Search seeded medications in local DB (case-insensitive LIKE)."""
     try:
         from db import get_db
+        # Escape LIKE wildcards in the user-supplied query -- a literal % or
+        # _ would otherwise be interpreted as "any characters"/"any one
+        # character" instead of a literal, matching far more than an actual
+        # substring search should (e.g. "__" matching any two-character
+        # medication name anywhere).
+        escaped_q = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         with get_db() as db:
             rows = db.execute(
                 "SELECT npl_pack_id, name, strength, form FROM medications "
-                "WHERE name LIKE ? ORDER BY name LIMIT 10",
-                [f"%{q}%"],
+                "WHERE name LIKE ? ESCAPE '\\' ORDER BY name LIMIT 10",
+                [f"%{escaped_q}%"],
             ).fetchall()
         return [
             {"npl_id": r["npl_pack_id"], "name": r["name"], "form": r["form"] or ""}
@@ -143,32 +192,43 @@ def get_packages(npl_id):
     Returns list of:
       {"npl_pack_id": str, "name": str, "form": str, "shortage": bool}
     """
-    try:
-        items = _proxy_get(f"package/{npl_id}?isParallellImported=false")
-    except Exception as e:
-        print(f"  fass packages error for {npl_id}: {e}")
-        return []
+    cached = _packages_cache.get(npl_id)
+    if cached and (time.time() - cached[0]) < _CACHE_TTL:
+        return cached[1]
 
-    packages = []
-    for item in (items if isinstance(items, list) else []):
-        if not item.get("isOnTheMarket", False):
-            continue
-        self_url = item.get("links", {}).get("selfUrl", "")
-        pack_id = self_url[len("package/"):] if self_url.startswith("package/") else ""
-        if not pack_id:
-            continue
-        form = item.get("doseForm", "")
-        container = item.get("container", "")
-        qty = item.get("quantity", "")
-        name_parts = [str(qty), container] if qty and container else [container or str(qty)]
-        name = f"{form} ({', '.join(p for p in name_parts if p)})" if name_parts[0] else form
-        packages.append({
-            "npl_pack_id": pack_id,
-            "name": name or pack_id,
-            "form": form,
-            "shortage": bool(item.get("medicinalShortage")),
-        })
-    return packages
+    with _lock_for(f"packages:{npl_id}"):
+        cached = _packages_cache.get(npl_id)
+        if cached and (time.time() - cached[0]) < _CACHE_TTL:
+            return cached[1]
+
+        try:
+            items = _proxy_get(f"package/{npl_id}?isParallellImported=false")
+        except Exception as e:
+            print(f"  fass packages error for {npl_id}: {e}")
+            return []
+
+        packages = []
+        for item in (items if isinstance(items, list) else []):
+            if not item.get("isOnTheMarket", False):
+                continue
+            self_url = item.get("links", {}).get("selfUrl", "")
+            pack_id = self_url[len("package/"):] if self_url.startswith("package/") else ""
+            if not pack_id:
+                continue
+            form = item.get("doseForm", "")
+            container = item.get("container", "")
+            qty = item.get("quantity", "")
+            name_parts = [str(qty), container] if qty and container else [container or str(qty)]
+            name = f"{form} ({', '.join(p for p in name_parts if p)})" if name_parts[0] else form
+            packages.append({
+                "npl_pack_id": pack_id,
+                "name": name or pack_id,
+                "form": form,
+                "shortage": bool(item.get("medicinalShortage")),
+            })
+
+        _packages_cache[npl_id] = (time.time(), packages)
+        return packages
 
 
 def check_stock(npl_pack_id, gln_codes, pharmacy_map):
