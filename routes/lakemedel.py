@@ -5,6 +5,7 @@ from flask import Blueprint, redirect, render_template, request
 
 import checker
 import fass
+import shortage
 from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
 from db import escape_like, get_db, get_medication, is_medication_indexable
 from pharmacy_grouping import group_pharmacies_by_omrade, normalize_omrade
@@ -148,6 +149,8 @@ def lakemedel(id_slug):
         history = _stock_history(db, npl_pack_id)
         siblings = _sibling_packages(db, med)
 
+    shortage_info = shortage.get_shortage_info(npl_pack_id)
+
     try:
         stock = checker.get_stock_info(npl_pack_id)
     except Exception:
@@ -195,6 +198,7 @@ def lakemedel(id_slug):
         stock_unknown=stock_unknown,
         checked_at=stock["checked_at"],
         history=history,
+        shortage_info=shortage_info,
         siblings=siblings,
         indexable=indexable,
         show_partner_guide=npl_pack_id in checker.MENOPAUSE_RELATED_IDS,

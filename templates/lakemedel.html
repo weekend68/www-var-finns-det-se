@@ -243,6 +243,24 @@
     </div>
     {% endif %}
 
+    {% if shortage_info %}
+    <div class="card">
+      <h2 class="section-heading">Nationell bristsituation (Läkemedelsverket)</h2>
+      <p>
+        Läkemedelsverket har registrerat en bristsituation för {{ med.name }}, sedan {{ shortage_info.forecasted_start }}.
+        {%- if shortage_info.actual_end %}
+        Enligt Läkemedelsverket är bristen nu avslutad, sedan {{ shortage_info.actual_end }}.
+        {%- elif shortage_info.forecasted_end %}
+        Prognosen är att läkemedlet väntas tillbaka i lager omkring {{ shortage_info.forecasted_end }}.
+        {%- endif %}
+      </p>
+      <p class="checked-at" style="margin-top:0.5rem">
+        Det här är Läkemedelsverkets egen nationella registrering och prognos — inte samma sak som "Historik" ovan,
+        som visar vad vi faktiskt sett i lager hos apotek.
+      </p>
+    </div>
+    {% endif %}
+
     {% if siblings %}
     <div class="card">
       <h2 class="section-heading">Andra styrkor/förpackningar</h2>
