@@ -106,6 +106,7 @@ def create_app():
     def robots_txt():
         lines = [
             "User-agent: *",
+            "Disallow: /subscribe",
             "Disallow: /manage/",
             "Disallow: /confirm/",
             "Disallow: /unsubscribe/",
