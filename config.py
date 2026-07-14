@@ -40,10 +40,7 @@ MIN_CONSECUTIVE_POLLS = 2
 #
 # Format matches poll_log.polled_at exactly (checker.py's _log_poll(), NOT
 # db.utcnow_str()'s space-separated convention) -- "%Y-%m-%dT%H:%M:%S".
-#
-# UPDATE THIS to the actual production deploy time when this change ships;
-# it's set to a self-explanatory placeholder here on the feature branch.
-HISTORY_RELIABLE_SINCE = "2026-07-15T00:00:00"
+HISTORY_RELIABLE_SINCE = "2026-07-15T01:15:00"
 
 
 def token_url(site_url, kind, token):
