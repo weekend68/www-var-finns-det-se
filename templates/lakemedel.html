@@ -192,18 +192,46 @@
       <form method="get" id="omrade-form" style="margin:0.75rem 0;display:flex;gap:0.5rem;align-items:center">
         <label for="omrade-input" style="font-size:0.85rem;color:#555">Postnummer:</label>
         <input id="omrade-input" name="omrade" type="text" inputmode="numeric" maxlength="5"
-               value="{{ omrade or '' }}" placeholder="T.ex. 17157"
+               value="{{ omrade_input or '' }}" placeholder="T.ex. 17157"
                style="width:6rem;padding:0.3rem 0.5rem;border:1px solid #ccc;border-radius:4px">
         <button type="submit" style="padding:0.3rem 0.7rem;border:1px solid #22D3A5;background:#22D3A5;color:#0D1B2A;border-radius:4px;font-weight:600;cursor:pointer">Visa nära mig</button>
       </form>
       <script>
-      document.getElementById('omrade-form').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var v = document.getElementById('omrade-input').value.replace(/\D/g, '').slice(0, 3);
-        var url = new URL(window.location.href);
-        if (v) { url.searchParams.set('omrade', v); } else { url.searchParams.delete('omrade'); }
-        window.location.href = url.pathname + url.search;
-      });
+      (function () {
+        // Remember the visitor's postnummer in localStorage (client-side only,
+        // never sent to or stored by the server outside this one request) so
+        // they see "Nära dig" automatically on their next medication page,
+        // without retyping it every time.
+        var STORAGE_KEY = 'varfinnsdet_postnummer';
+        var params = new URLSearchParams(window.location.search);
+
+        if (!params.has('omrade')) {
+          var saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            params.set('omrade', saved);
+            window.location.replace(window.location.pathname + '?' + params.toString());
+            return;
+          }
+        }
+
+        document.getElementById('omrade-form').addEventListener('submit', function (e) {
+          e.preventDefault();
+          // Full postnummer, NOT truncated here -- the server normalizes it
+          // for matching (pharmacy_grouping.normalize_omrade) but redisplays
+          // this exact raw value in the field, so it never looks truncated
+          // back at the visitor.
+          var v = document.getElementById('omrade-input').value.replace(/\D/g, '');
+          var url = new URL(window.location.href);
+          if (v) {
+            url.searchParams.set('omrade', v);
+            localStorage.setItem(STORAGE_KEY, v);
+          } else {
+            url.searchParams.delete('omrade');
+            localStorage.removeItem(STORAGE_KEY);
+          }
+          window.location.href = url.pathname + url.search;
+        });
+      })();
       </script>
 
       {% if omrade %}

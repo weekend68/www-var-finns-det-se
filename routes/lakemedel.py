@@ -216,7 +216,12 @@ def lakemedel(id_slug):
     in_stock_now = len(pharmacies) > 0
     few_only = in_stock_now and not any(p["status"] == "IN_STOCK" for p in pharmacies)
 
-    omrade = normalize_omrade(request.args.get("omrade", ""))
+    # Keep the raw query value separate from the normalized (3-digit) omrade --
+    # normalize_omrade() truncates a full postnummer down to its matching
+    # precision, but redisplaying that truncated value in the postnummer
+    # input field looks broken to someone who just typed a full 5-digit code.
+    omrade_input = request.args.get("omrade", "").strip()
+    omrade = normalize_omrade(omrade_input)
     nara, region, rest = group_pharmacies_by_omrade(pharmacies, omrade)
 
     canonical_url = medication_url(SITE_URL, npl_pack_id, med["name"], med["strength"], med["form"])
@@ -241,6 +246,7 @@ def lakemedel(id_slug):
         npl_pack_id=npl_pack_id,
         pharmacies=pharmacies,
         omrade=omrade,
+        omrade_input=omrade_input,
         nara=nara,
         region=region,
         rest=rest,

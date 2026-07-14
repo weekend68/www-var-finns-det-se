@@ -31,13 +31,18 @@ def _postal_digits(ph):
     return re.sub(r"\D", "", ph.get("postalcode", "") or "")
 
 
-def group_pharmacies_by_omrade(pharmacies, omrade, min_nearby=3):
+def group_pharmacies_by_omrade(pharmacies, omrade):
     """
     omrade: a 2-3 digit postal-code prefix (as returned by normalize_omrade).
     Returns (nara, region, rest):
       nara   — exact 3-digit prefix match ("Nära dig")
-      region — 2-digit prefix match minus nara ("I regionen"), only
-               populated if len(nara) < min_nearby
+      region — 2-digit prefix match minus nara ("I regionen") -- always
+               populated when there are any such matches, regardless of how
+               many are already in nara. A pharmacy a few postnummer away is
+               still meaningfully "in the region", not equivalent to one
+               anywhere else in Sweden -- burying it in "Övriga apotek i
+               Sverige" just because nara already had enough hits was
+               actively misleading, not a helpful simplification.
       rest   — everything else, unfiltered order preserved
     """
     if not omrade:
@@ -47,15 +52,11 @@ def group_pharmacies_by_omrade(pharmacies, omrade, min_nearby=3):
     p2 = omrade[:2]
 
     nara = [ph for ph in pharmacies if p3 and _postal_digits(ph)[:3] == p3]
-
-    if len(nara) >= min_nearby:
-        region = []
-    else:
-        nara_keys = {_pharmacy_key(ph) for ph in nara}
-        region = [
-            ph for ph in pharmacies
-            if _postal_digits(ph)[:2] == p2 and _pharmacy_key(ph) not in nara_keys
-        ]
+    nara_keys = {_pharmacy_key(ph) for ph in nara}
+    region = [
+        ph for ph in pharmacies
+        if _postal_digits(ph)[:2] == p2 and _pharmacy_key(ph) not in nara_keys
+    ]
 
     grouped_keys = {_pharmacy_key(ph) for ph in nara + region}
     rest = [ph for ph in pharmacies if _pharmacy_key(ph) not in grouped_keys]

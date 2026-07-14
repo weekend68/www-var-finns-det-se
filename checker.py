@@ -30,7 +30,7 @@ POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2")) * 60
 # retired/renamed npl_pack_id) otherwise keeps serving its last successful
 # result forever, with nothing but a growing "checked_at" to betray it.
 STALE_AFTER = POLL_INTERVAL * 3
-SHOW_LIMIT = 10
+SHOW_LIMIT = 3
 
 # Populated by start_polling(); readable by routes for live stock checks
 _pharmacy_map: dict = {}
