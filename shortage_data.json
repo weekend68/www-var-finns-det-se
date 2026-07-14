@@ -1,6 +1,6 @@
 {
-  "snapshot_taken_at": "2026-07-14 22:04:51",
-  "source": "Läkemedelsverkets restsituationsregister (manuellt nedladdad export)",
+  "snapshot_taken_at": "2026-07-14 22:09:57",
+  "source": "Läkemedelsverkets restsituationsregister (live hämtning från https://docetp.mpa.se/LMF/Reports/opendata-medicine-shortages-current-3-0.xml)",
   "medicines": {
     "20001018100021": {
       "type_of_shortage": "SHORTAGE",

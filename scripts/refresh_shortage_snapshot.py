@@ -1,28 +1,38 @@
 """
-Regenerate shortage_data.json from a manually downloaded Läkemedelsverket
-medicine-shortage XML export.
+Regenerate shortage_data.json from Läkemedelsverket's medicine-shortage feed.
 
-Why manual: there's no confirmed, stable, machine-readable endpoint for this
-data yet (Läkemedelsverket's own site is too JS-heavy to fetch programmatically
--- see diskussionsunderlag/positionering-2026-07-14.md, Fas 0). Until that's
-resolved, refresh this by hand periodically:
+Fetches directly from the confirmed, public, unauthenticated open-data
+endpoint (no session/cookie required, verified working):
 
-  1. Download the current XML from Läkemedelsverket's "Sök anmälda
-     försäljningsuppehåll" search service (export to XML/Excel), or from
-     https://www.lakemedelsverket.se/sv/om-webbplatsen/oppna-data
-  2. Run: python scripts/refresh_shortage_snapshot.py path/to/downloaded.xml
-  3. Commit the updated shortage_data.json.
+  https://docetp.mpa.se/LMF/Reports/opendata-medicine-shortages-current-3-0.xml
+
+That page's own site (lakemedelsverket.se) is too JS-heavy to browse
+programmatically, but this docetp.mpa.se endpoint underneath it is a plain,
+directly-fetchable static file, updated daily.
+
+Usage:
+  python scripts/refresh_shortage_snapshot.py                  # fetch live
+  python scripts/refresh_shortage_snapshot.py path/to/local.xml # use a local file instead (offline/testing)
+
+Then commit the updated shortage_data.json.
 
 Only extracts entries for npl_pack_ids in checker.PRODUCTS -- this is the
 Fas 2 scope (actively-bevakade läkemedel only), not the full national
-catalogue (that's Fas 3).
+catalogue (that's Fas 3, which would ingest the whole feed).
+
+Not yet wired into a scheduled/cron job -- run by hand for now. Wiring this
+into automatic periodic refresh is a Fas 3 decision (how often, where it
+runs, whether it's worth adding to the always-on polling process or a
+separate lightweight job).
 """
 
 import json
 import sys
+import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 
+SHORTAGE_FEED_URL = "https://docetp.mpa.se/LMF/Reports/opendata-medicine-shortages-current-3-0.xml"
 NS = "http://eservices.lakemedelsverket.se/opendata/medicineshortage/v3/"
 
 
@@ -30,9 +40,18 @@ def _tag(name):
     return f"{{{NS}}}{name}"
 
 
-def extract(xml_path, tracked_ids):
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
+def _fetch(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (compatible; varfinnsdet/1.0)"})
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        return resp.read()
+
+
+def extract(xml_source, tracked_ids):
+    """xml_source: a file path (str) or raw bytes."""
+    if isinstance(xml_source, (bytes, bytearray)):
+        root = ET.fromstring(xml_source)
+    else:
+        root = ET.parse(xml_source).getroot()
 
     found = {}
     for shortage in root.iter(_tag("MedicineShortage")):
@@ -53,19 +72,23 @@ def extract(xml_path, tracked_ids):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python scripts/refresh_shortage_snapshot.py path/to/downloaded.xml")
-        sys.exit(1)
-
     sys.path.insert(0, ".")
     import checker
 
     tracked_ids = {p["npl_pack_id"] for p in checker.PRODUCTS}
-    found = extract(sys.argv[1], tracked_ids)
+
+    if len(sys.argv) > 1:
+        source_desc = f"lokal fil ({sys.argv[1]})"
+        found = extract(sys.argv[1], tracked_ids)
+    else:
+        print(f"Hämtar {SHORTAGE_FEED_URL} ...")
+        data = _fetch(SHORTAGE_FEED_URL)
+        source_desc = f"live hämtning från {SHORTAGE_FEED_URL}"
+        found = extract(data, tracked_ids)
 
     snapshot = {
         "snapshot_taken_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-        "source": "Läkemedelsverkets restsituationsregister (manuellt nedladdad export)",
+        "source": f"Läkemedelsverkets restsituationsregister ({source_desc})",
         "medicines": found,
     }
 
