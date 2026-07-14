@@ -140,13 +140,14 @@
       <p class="subtitle">{{ [med.strength, med.form] | select | join(' · ') }}</p>
       {% endif %}
 
+      {% set show_shortage_note = shortage_info and not shortage_info.actual_end %}
       {% if stock_unknown %}
         <p class="status-line unknown">⚪ Kunde inte kontrollera lagerstatus just nu</p>
       {% elif in_stock_now %}
         {% if few_only %}
-        <p class="status-line few">🟡 Få kvar — {{ pharmacies | length }} apotek</p>
+        <p class="status-line few">🟡 Få kvar — {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara enligt Läkemedelsverket (<a href="#bristsituation">läs mer</a>){% endif %}</p>
         {% else %}
-        <p class="status-line in">🟢 I lager på {{ pharmacies | length }} apotek</p>
+        <p class="status-line in">🟢 I lager på {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara enligt Läkemedelsverket (<a href="#bristsituation">läs mer</a>){% endif %}</p>
         {% endif %}
       {% else %}
         <p class="status-line out">🔴 Restnoterat — inte i lager just nu</p>
@@ -257,7 +258,7 @@
     </div>
 
     {% if shortage_info %}
-    <div class="card">
+    <div class="card" id="bristsituation">
       <h2 class="section-heading">Nationell bristsituation (Läkemedelsverket)</h2>
       <p>
         Läkemedelsverket har registrerat en nationell bristsituation för {{ med.name }}, sedan {{ shortage_info.forecasted_start }}
