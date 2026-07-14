@@ -56,6 +56,7 @@
     .status-line.few { color: #b07d00; }
     .status-line.out { color: #c0392b; }
     .status-line.unknown { color: #777; }
+    .status-line a { color: inherit; text-decoration: underline; }
     .checked-at { font-size: 0.8rem; color: #888; margin-bottom: 0.75rem; }
     .btn-watch { display: inline-block; background: #22D3A5; color: #0D1B2A; font-weight: 700;
                  padding: 0.6rem 1.3rem; border-radius: 6px; text-decoration: none; font-size: 0.92rem; }
@@ -145,9 +146,9 @@
         <p class="status-line unknown">⚪ Kunde inte kontrollera lagerstatus just nu</p>
       {% elif in_stock_now %}
         {% if few_only %}
-        <p class="status-line few">🟡 Få kvar — {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara enligt Läkemedelsverket (<a href="#bristsituation">läs mer</a>){% endif %}</p>
+        <p class="status-line few">🟡 Få kvar — {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara <a href="#bristsituation">enligt Läkemedelsverket</a>{% endif %}</p>
         {% else %}
-        <p class="status-line in">🟢 I lager på {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara enligt Läkemedelsverket (<a href="#bristsituation">läs mer</a>){% endif %}</p>
+        <p class="status-line in">🟢 I lager på {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara <a href="#bristsituation">enligt Läkemedelsverket</a>{% endif %}</p>
         {% endif %}
       {% else %}
         <p class="status-line out">🔴 Restnoterat — inte i lager just nu</p>
