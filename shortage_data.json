@@ -1,0 +1,76 @@
+{
+  "snapshot_taken_at": "2026-07-14 22:04:51",
+  "source": "Läkemedelsverkets restsituationsregister (manuellt nedladdad export)",
+  "medicines": {
+    "20001018100021": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-06-01",
+      "forecasted_end": "2026-08-31",
+      "actual_end": null,
+      "last_updated": "2026-05-26"
+    },
+    "20011130100502": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-01-30",
+      "forecasted_end": "2026-08-04",
+      "actual_end": null,
+      "last_updated": "2026-05-12"
+    },
+    "20160407100353": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-03-17",
+      "forecasted_end": "2026-12-31",
+      "actual_end": null,
+      "last_updated": "2026-03-17"
+    },
+    "20140320100036": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-03-17",
+      "forecasted_end": "2026-12-31",
+      "actual_end": null,
+      "last_updated": "2026-03-17"
+    },
+    "20011130100526": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-04-10",
+      "forecasted_end": "2026-08-28",
+      "actual_end": null,
+      "last_updated": "2026-04-20"
+    },
+    "20011130100564": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-06-17",
+      "forecasted_end": "2026-10-21",
+      "actual_end": null,
+      "last_updated": "2026-06-17"
+    },
+    "20040113100574": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-04-13",
+      "forecasted_end": "2026-07-29",
+      "actual_end": null,
+      "last_updated": "2026-06-26"
+    },
+    "19961001100275": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-06-01",
+      "forecasted_end": "2026-08-31",
+      "actual_end": null,
+      "last_updated": "2026-05-26"
+    },
+    "20011130100489": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-04-17",
+      "forecasted_end": "2026-10-01",
+      "actual_end": null,
+      "last_updated": "2026-04-17"
+    },
+    "20181129100025": {
+      "type_of_shortage": "SHORTAGE",
+      "forecasted_start": "2026-05-07",
+      "forecasted_end": "2026-08-31",
+      "actual_end": null,
+      "last_updated": "2026-05-25"
+    }
+  }
+}
