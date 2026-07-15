@@ -4,12 +4,27 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Integritetspolicy — {{ site_name }}</title>
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{ site_url }}/privacy">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
            min-height: 100vh; display: flex; flex-direction: column; }
-    .hero { background: #0D1B2A; border-left: 5px solid #22D3A5; padding: 1rem 1.5rem; }
-    .hero a.hero-home { color: #22D3A5; font-weight: 700; text-decoration: none; font-size: 1.1rem; }
+    .hero {
+      background: #0D1B2A;
+      background-image: radial-gradient(#1E3A52 1px, transparent 1px);
+      background-size: 40px 40px;
+      border-left: 5px solid #22D3A5;
+      padding: 2rem 1.5rem 1.75rem;
+    }
+    .hero-inner { max-width: 720px; }
+    .hero-brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.4rem; }
+    .hero-name { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+    .hero-name-main { color: #EEF4F8; }
+    .hero-name-tld  { color: #22D3A5; }
+    .hero-tagline { color: #8CAFC7; font-size: 0.8rem; letter-spacing: 0.06em;
+                    text-transform: uppercase; margin-bottom: 0.9rem; }
+    .hero-desc { color: #A8C8DC; font-size: 0.875rem; line-height: 1.65; }
     main { flex: 1; padding: 2rem 1.5rem; max-width: 680px; }
     h1 { font-size: 1.4rem; color: #0D1B2A; margin-bottom: 0.5rem; }
     .updated { font-size: 0.8rem; color: #888; margin-bottom: 2rem; }
@@ -22,15 +37,32 @@
 </head>
 <body>
   <header class="hero">
-    <a href="/" class="hero-home">{{ site_name }}</a>
-    {% include "_nav.html" %}
+    <div class="hero-inner">
+      <div class="hero-brand">
+        <svg width="36" height="16" viewBox="0 0 36 16" aria-hidden="true" style="flex-shrink:0">
+          <rect x="0" y="0" width="36" height="16" rx="8" fill="none" stroke="#22D3A5" stroke-width="1.5"/>
+          <line x1="18" y1="0" x2="18" y2="16" stroke="#22D3A5" stroke-width="1.5"/>
+          <clipPath id="pill-lh"><rect x="0" y="0" width="18" height="16"/></clipPath>
+          <rect x="0" y="0" width="36" height="16" rx="8" fill="#22D3A5" clip-path="url(#pill-lh)"/>
+        </svg>
+        <a href="/" class="hero-name" style="text-decoration:none">
+          <span class="hero-name-main">{{ name_base }}</span><span class="hero-name-tld">{{ name_tld }}</span>
+        </a>
+      </div>
+      {% include "_nav.html" %}
+      <p class="hero-tagline">Integritetspolicy</p>
+      <p class="hero-desc">
+        Så hanterar vi dina uppgifter när du bevakar ett läkemedel — vad vi samlar in,
+        varför, och hur länge det sparas.
+      </p>
+    </div>
   </header>
   <main>
     <h1>Integritetspolicy</h1>
     <p class="updated">Senast uppdaterad: 2026-07-05</p>
 
     <h2>Personuppgiftsansvarig</h2>
-    <p>{{ site_name }} (kontakt: <a href="mailto:kontakt@varfinnsdet.se">kontakt@varfinnsdet.se</a>)</p>
+    <p>{{ site_name }} (kontakt: hello.johan.moller (a) gmail.com)</p>
 
     <h2>Vilka uppgifter samlar vi in?</h2>
     <ul>
