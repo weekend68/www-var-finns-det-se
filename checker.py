@@ -7,6 +7,10 @@ Optional env vars:
   POLL_INTERVAL       — minutes between checks (default: 2)
   CACHE_FILE          — path for persistent state cache (default: /data/medicinstatus_cache.json)
   FROM_EMAIL          — sender address for Resend (default: noreply@varfinnsdet.se)
+  NOTIFICATIONS_PAUSED — kill switch for restock notification emails (default: true --
+                         temporary, while a Divigel false-restock flap recurred despite the
+                         cooldown/blip filter in config.NOTIFY_COOLDOWN_HOURS/MIN_CONSECUTIVE_POLLS;
+                         set to "false" to resume sending)
 """
 
 import json
@@ -25,6 +29,7 @@ from fass import check_stock
 TZ = ZoneInfo("Europe/Stockholm")
 CACHE_FILE = os.getenv("CACHE_FILE", "/data/medicinstatus_cache.json")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2")) * 60
+NOTIFICATIONS_PAUSED = os.getenv("NOTIFICATIONS_PAUSED", "true").strip().lower() in ("1", "true", "yes")
 # A "polled" state["all_stock"] entry is only trustworthy if it was actually
 # refreshed recently -- a product that starts erroring every cycle (e.g. a
 # retired/renamed npl_pack_id) otherwise keeps serving its last successful
@@ -566,6 +571,12 @@ def _notify_subscribers(npl_pack_id, medication_name, pharmacies, checked_at):
     since prev_in_stock had already flipped to "seen in stock" and the
     transition (the only thing that used to trigger this function) never
     fires again until the product goes out of stock and back in."""
+    if NOTIFICATIONS_PAUSED:
+        # Temporary kill switch (see module docstring) -- last_notified_at is
+        # left untouched so real subscribers get notified as soon as this is
+        # turned back off, not silently skipped.
+        return
+
     try:
         import mail
         from db import get_db, get_medication, get_or_create_token, utcnow_str
