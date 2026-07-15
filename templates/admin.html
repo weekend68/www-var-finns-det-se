@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — statistik | {{ site_name }}</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222; }
+    header { background: #0D1B2A; border-left: 5px solid #22D3A5; padding: 1.25rem 1.5rem; }
+    header a { color: #8CAFC7; font-size: 0.85rem; text-decoration: none; }
+    header a:hover { color: #22D3A5; text-decoration: underline; }
+    header h1 { color: #EEF4F8; font-size: 1.2rem; margin-top: 0.3rem; }
+    main { max-width: 720px; margin: 0 auto; padding: 1.5rem; }
+    .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .card h2 { font-size: 0.8rem; font-weight: 600; color: #888; text-transform: uppercase;
+               letter-spacing: 0.06em; margin-bottom: 0.9rem; }
+    .stat-row { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .stat { min-width: 110px; }
+    .stat .value { font-size: 1.6rem; font-weight: 700; color: #0D1B2A; }
+    .stat .label { font-size: 0.78rem; color: #777; margin-top: 0.15rem; }
+    ol.ranked { list-style: none; }
+    ol.ranked li { display: flex; justify-content: space-between; gap: 1rem;
+                   padding: 0.4rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+    ol.ranked li:last-child { border-bottom: none; }
+    ol.ranked a { color: #0D1B2A; text-decoration: none; }
+    ol.ranked a:hover { color: #1bb890; text-decoration: underline; }
+    ol.ranked .cnt { color: #888; font-size: 0.82rem; white-space: nowrap; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 2px solid #eee; color: #888; font-weight: 600; }
+    td { padding: 0.3rem 0.5rem; border-bottom: 1px solid #f0f0f0; }
+    .empty { color: #999; font-style: italic; font-size: 0.88rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">← Tillbaka till startsidan</a>
+    <h1>{{ site_name }} — Admin</h1>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>Sammanfattning</h2>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="value">{{ confirmed_subscribers }}</div>
+          <div class="label">Bekräftade prenumeranter</div>
+        </div>
+        <div class="stat">
+          <div class="value">{{ active_subscriptions }}</div>
+          <div class="label">Aktiva bevakningar</div>
+        </div>
+        <div class="stat">
+          <div class="value">{{ notification.rate ~ '%' if notification.rate is not none else '—' }}</div>
+          <div class="label">Andel med skickad notis ({{ notification.notified }}/{{ notification.total }})</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Notifieringslatens (upptäckt → mejl)</h2>
+      {% if latency.count %}
+      <div class="stat-row">
+        <div class="stat">
+          <div class="value">{{ latency.avg_minutes }} min</div>
+          <div class="label">Snitt</div>
+        </div>
+        <div class="stat">
+          <div class="value">{{ latency.median_minutes }} min</div>
+          <div class="label">Median</div>
+        </div>
+        <div class="stat">
+          <div class="value">{{ latency.count }}</div>
+          <div class="label">Mätningar</div>
+        </div>
+      </div>
+      {% else %}
+      <p class="empty">Inga mätbara notiser ännu.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Mest bevakade läkemedel</h2>
+      {% if most_watched %}
+      <ol class="ranked">
+        {% for row in most_watched %}
+        <li>
+          <a href="/lakemedel/{{ row.npl_pack_id }}">{{ loop.index }}. {{ row.name }}</a>
+          <span class="cnt">{{ row.cnt }} bevakningar</span>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="empty">Inga bevakningar ännu.</p>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Nya bevakningar, senaste 30 dagarna</h2>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="value">{{ split.curated }}</div>
+          <div class="label">Kurerade (startsidan)</div>
+        </div>
+        <div class="stat">
+          <div class="value">{{ split.catalog }}</div>
+          <div class="label">Övrig katalog</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Nya bevakningar per vecka</h2>
+      {% if weekly %}
+      <table>
+        <thead><tr><th>Vecka</th><th>Nya bevakningar</th></tr></thead>
+        <tbody>
+          {% for row in weekly %}
+          <tr><td>{{ row.week }}</td><td>{{ row.cnt }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="empty">Ingen data ännu.</p>
+      {% endif %}
+    </div>
+  </main>
+</body>
+</html>

@@ -137,6 +137,8 @@ def create_app():
             "Disallow: /unsubscribe/",
             "Disallow: /extend/",
             "Disallow: /api/",
+            "Disallow: /admin",
+            "Disallow: /log",
         ]
         if SITE_URL:
             lines.append(f"Sitemap: {SITE_URL}/sitemap.xml")
@@ -166,6 +168,7 @@ def create_app():
     from routes.log import bp as log_bp
     from routes.lakemedel import bp as lakemedel_bp
     from routes.kategori import bp as kategori_bp
+    from routes.admin import bp as admin_bp
     app.register_blueprint(subscribe_bp)
     app.register_blueprint(manage_bp)
     app.register_blueprint(unsubscribe_bp)
@@ -174,6 +177,7 @@ def create_app():
     app.register_blueprint(log_bp)
     app.register_blueprint(lakemedel_bp)
     app.register_blueprint(kategori_bp)
+    app.register_blueprint(admin_bp)
 
     if not _polling_started.is_set():
         _polling_started.set()

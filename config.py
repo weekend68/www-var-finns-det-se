@@ -42,6 +42,13 @@ MIN_CONSECUTIVE_POLLS = 2
 # db.utcnow_str()'s space-separated convention) -- "%Y-%m-%dT%H:%M:%S".
 HISTORY_RELIABLE_SINCE = "2026-07-15T01:15:00"
 
+# /admin (routes/admin.py) is HTTP Basic Auth-gated by this password. Empty
+# (unset) disables the route entirely (404) rather than serving a login
+# prompt nobody can pass -- a deploy that forgets to set this must fail
+# closed, not expose an unguessable-but-technically-reachable login form.
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+
 
 def token_url(site_url, kind, token):
     """Build a token-bearing URL (manage/confirm/unsubscribe/extend) --
