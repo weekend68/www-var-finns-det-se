@@ -283,35 +283,18 @@ def lakemedel(id_slug):
 
     canonical_url = medication_url(SITE_URL, npl_pack_id, med["name"], med["strength"], med["form"])
 
-    description = f"Lagerstatus och bevakning för {med['name']} på svenska apotek."
-
-    jsonld = {
-        "@context": "https://schema.org",
-        "@type": "Product",
-        # Google has no dedicated "Drug" rich-result type (verified against
-        # https://developers.google.com/search/docs/appearance/structured-data/search-gallery)
-        # -- additionalType flags the underlying real-world type as a Drug
-        # while keeping @type: Product for whatever general understanding
-        # that still buys us with Google/AI crawlers.
-        #
-        # Deliberately NO "offers" field (removed 2026-07-15, previously
-        # just {"@type": "Offer", "url": ..., "availability": ...}) --
-        # Google requires Offer.price once an Offer is present at all
-        # (confirmed against Google's own Product snippet docs), and this
-        # site has no price: nothing is for sale here. Fabricating one to
-        # silence the Rich Results Test's "missing price" error would be
-        # exactly the kind of misrepresentative structured data Google's
-        # own spam policies prohibit -- and gains nothing anyway, since an
-        # Offer without price is invalid either way (no Product/Merchant
-        # rich result was ever honestly achievable without a price or a
-        # review/rating, neither of which apply to a stock checker).
-        "additionalType": "https://schema.org/Drug",
-        "name": med["name"],
-        "sku": npl_pack_id,
-        "description": description,
-    }
-    if med["manufacturer"]:
-        jsonld["brand"] = {"@type": "Brand", "name": med["manufacturer"]}
+    # No Product/Drug JSON-LD here (removed 2026-07-15) -- Google requires a
+    # Product to carry offers, review or aggregateRating to be valid at all,
+    # and none apply to a stock checker (nothing for sale, no reviews/
+    # ratings). Drug is schema.org-wise a subtype of BOTH Substance AND
+    # Product (confirmed against schema.org's own type hierarchy), so even
+    # switching to a bare "Drug" @type carries a real risk of still being
+    # evaluated as an (invalid) Product by Google's validator. No rich
+    # result was ever honestly achievable here either way -- name/
+    # manufacturer are already visible in the page's plain HTML/meta tags,
+    # so nothing is lost for AI/crawler understanding by not asserting it
+    # in JSON-LD too. FAQPage and BreadcrumbList below are unaffected and
+    # already confirmed valid.
 
     # Built once here and handed to the template for BOTH the visible <dl>
     # FAQ HTML and the FAQPage JSON-LD block -- never two separate sources
@@ -377,7 +360,6 @@ def lakemedel(id_slug):
         show_partner_guide=med["atc_code"] == ESTRADIOL_ATC_CODE,
         canonical_url=canonical_url,
         og_image=og_image,
-        jsonld=jsonld,
         faq_list=faq_list,
         jsonld_faq=jsonld_faq,
         jsonld_breadcrumb=jsonld_breadcrumb,
