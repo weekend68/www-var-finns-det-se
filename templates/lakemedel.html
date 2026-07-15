@@ -25,187 +25,78 @@
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <script type="application/ld+json">{{ jsonld_faq | tojson }}</script>
   <script type="application/ld+json">{{ jsonld_breadcrumb | tojson }}</script>
+  {% include "_design.html" %}
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
-           min-height: 100vh; display: flex; flex-direction: column; }
-    .hero {
-      background: #0D1B2A;
-      background-image: radial-gradient(#1E3A52 1px, transparent 1px);
-      background-size: 40px 40px;
-      border-left: 5px solid #22D3A5;
-      padding: 2rem 1.5rem 1.75rem;
-      position: relative;
-    }
-    .hero-inner { max-width: 720px; }
-    .hero-top { display: flex; align-items: center; justify-content: space-between;
-                flex-wrap: wrap; gap: 0.4rem 1.5rem; margin-bottom: 1rem; }
-    .hero-brand { display: flex; align-items: center; gap: 0.6rem; }
-    .hero-name { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
-    .hero-name-main { color: #EEF4F8; }
-    .hero-name-tld  { color: #22D3A5; }
-    .hero-tagline { color: #8CAFC7; font-size: 0.8rem; letter-spacing: 0.06em;
-                    text-transform: uppercase; margin-bottom: 0.9rem; }
-    .hero-desc { color: #A8C8DC; font-size: 0.875rem; line-height: 1.65; margin-bottom: 1rem; }
-    .hero-desc a { color: #22D3A5; text-decoration: none; }
-    .hero-steps { color: #6a90a8; font-size: 0.8rem; line-height: 1.8; }
-    .hero-steps strong { color: #A8C8DC; }
-    .live-badge { position: absolute; top: 1.25rem; right: 1.5rem;
-                  display: flex; align-items: center; gap: 0.4rem;
-                  color: #3D6480; font-size: 0.7rem; letter-spacing: .12em; }
-    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #22D3A5;
-                animation: pulse 2s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-    main { flex: 1; padding: 1.5rem; }
-    .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,.08); max-width: 720px; }
-    h1 { font-size: 1.3rem; color: #0D1B2A; margin-bottom: 0.3rem; max-width: 720px; }
-    .subtitle { font-size: 0.9rem; color: #777; margin-bottom: 1rem; max-width: 720px; }
-    .status-line { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.3rem; }
-    .status-line.in { color: #2a7d2a; }
-    .status-line.few { color: #b07d00; }
-    .status-line.out { color: #c0392b; }
-    .status-line.unknown { color: #777; }
-    .status-line a { color: inherit; text-decoration: underline; }
-    .checked-at { font-size: 0.8rem; color: #888; margin-bottom: 0.75rem; }
-    .btn-watch { display: inline-block; background: #22D3A5; color: #0D1B2A; font-weight: 700;
-                 padding: 0.6rem 1.3rem; border-radius: 6px; text-decoration: none; font-size: 0.92rem; }
-    .btn-watch:hover { background: #1bb890; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 0.75rem; }
-    th { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 2px solid #eee; color: #888; font-weight: 600; }
-    td { padding: 0.35rem 0.5rem; border-bottom: 1px solid #f0f0f0; }
-    .status { font-weight: 600; }
-    .in_stock    { color: #2a7d2a; }
-    .few_in_stock { color: #b07d00; }
-    details summary { cursor: pointer; font-size: 0.85rem; color: #555; padding: 0.4rem 0; list-style: none; }
-    details summary::before { content: "▸ "; }
-    details[open] summary::before { content: "▾ "; }
-    .section-heading { font-size: 0.8rem; font-weight: 600; color: #888; text-transform: uppercase;
-                        letter-spacing: 0.06em; margin-bottom: 0.6rem; }
-    .siblings { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .siblings a { font-size: 0.85rem; color: #0D1B2A; background: #f0faf7; border: 1px solid #cdeee3;
-                  border-radius: 5px; padding: 0.3rem 0.6rem; text-decoration: none; }
-    .siblings a:hover { border-color: #22D3A5; }
-    .category-link { display: inline-block; font-size: 0.8rem; color: #3D6480;
-                      text-decoration: none; margin-bottom: 0.6rem; }
-    .category-link:hover { color: #1bb890; text-decoration: underline; }
-    .faq dt { font-weight: 600; font-size: 0.9rem; color: #0D1B2A; margin-top: 0.75rem; }
-    .faq dd { font-size: 0.85rem; color: #555; margin-top: 0.2rem; line-height: 1.5; }
-    .partner-guide { display: block; color: inherit; text-decoration: none;
-                     border: 1px solid transparent;
-                     transition: box-shadow .15s ease, border-color .15s ease; }
-    .partner-guide:hover { box-shadow: 0 2px 10px rgba(0,0,0,.12); border-color: #1bb890; }
-    .partner-guide p { font-size: 0.85rem; color: #555; line-height: 1.6; }
-    .partner-guide p + p { margin-top: 0.5rem; }
-    .partner-guide strong.brand { color: #1bb890; font-weight: 600; }
-    .partner-guide .disclosure { font-size: 0.8rem; color: #888; margin-top: 0.4rem; }
-    .steps { color: #6a90a8; font-size: 0.85rem; line-height: 1.8; }
-    .steps strong { color: #0D1B2A; }
-    footer { max-width: 720px; margin: 1rem 1.5rem 1.5rem; padding-top: 1rem;
-             font-size: 0.75rem; color: #999; line-height: 1.6; border-top: 1px solid #e0e0e0; }
-    footer a { color: #999; }
+    .med-main { max-width: 680px; margin: 0 auto; padding: 1.4rem 1.2rem 2.4rem; }
+    .med-filter { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; font-size: 0.85rem; }
+    .med-filter input { width: 6.5rem; padding: 0.4rem 0.6rem; border: 1.5px solid var(--line); border-radius: 6px; font-family: inherit; font-size: 0.85rem; }
+    .med-filter button { padding: 0.4rem 0.8rem; border: none; background: var(--cta); color: var(--cta-ink); border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer; }
+    .med-siblings { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .med-siblings a { font-size: 0.82rem; color: var(--ink); background: #F2F0E8; border: 1px solid var(--line); border-radius: 6px; padding: 0.35rem 0.65rem; text-decoration: none; }
+    .med-siblings a:hover { border-color: var(--cta); }
+    .med-steps { font-size: 0.86rem; line-height: 1.9; color: var(--muted); }
+    .med-steps strong { color: var(--ink); }
   </style>
   {% include "_umami.html" %}
-  <script>
-  document.addEventListener("DOMContentLoaded", function() {
-    var link = document.getElementById("partner-guide-link");
-    if (link) {
-      link.addEventListener("click", function() {
-        if (typeof umami !== "undefined") umami.track("partnerguiden-klick", { sida: "lakemedel" });
-      });
-    }
-  });
-  </script>
 </head>
 <body>
-  <header class="hero">
-    <div class="hero-inner">
-      <div class="hero-top">
-        <div class="hero-brand">
-          <svg width="36" height="16" viewBox="0 0 36 16" aria-hidden="true" style="flex-shrink:0">
-            <rect x="0" y="0" width="36" height="16" rx="8" fill="none" stroke="#22D3A5" stroke-width="1.5"/>
-            <line x1="18" y1="0" x2="18" y2="16" stroke="#22D3A5" stroke-width="1.5"/>
-            <clipPath id="pill-lh"><rect x="0" y="0" width="18" height="16"/></clipPath>
-            <rect x="0" y="0" width="36" height="16" rx="8" fill="#22D3A5" clip-path="url(#pill-lh)"/>
-          </svg>
-          <a href="/" class="hero-name" style="text-decoration:none">
-            <span class="hero-name-main">{{ name_base }}</span><span class="hero-name-tld">{{ name_tld }}</span>
-          </a>
-        </div>
-        {% include "_nav.html" %}
-      </div>
-      <p class="hero-tagline">Vilket apotek har mitt läkemedel just nu?</p>
-      <p class="hero-desc">
-        Lagerstatus för alla läkemedel på Sveriges apotek. Är ditt läkemedel restnoterat?
-        Bevaka det — vi skickar e-post så fort det finns igen på något apotek i Sverige.
-      </p>
-      <p class="hero-steps">
-        🔍 <strong>Sök</strong> ditt läkemedel &nbsp;→&nbsp;
-        🔔 <strong>Bevaka</strong> med din e-postadress &nbsp;→&nbsp;
-        📬 <strong>Få e-post</strong> när det finns igen
-      </p>
-    </div>
-    <div class="live-badge" aria-label="Live">
-      <span class="live-dot"></span>LIVE
-    </div>
-  </header>
+  {% set in_stock_now = in_stock_now %}
+  {% if stock_unknown %}
+    {% set hero_desc = "Kunde inte kontrollera lagerstatus för " + med.name + " just nu — se nedan." %}
+  {% elif in_stock_now %}
+    {% set hero_desc = med.name + " finns just nu i lager. Bevaka det ändå — vi mejlar dig om det blir restnoterat." %}
+  {% else %}
+    {% set hero_desc = "Är " + med.name + " restnoterat? Bevaka det — vi skickar e-post så fort det finns igen på något apotek i Sverige." %}
+  {% endif %}
+  {% include "_header.html" %}
 
   <main>
-    <div class="card">
-      {% if category %}
-      <a class="category-link" href="{{ category.url }}">← Alla {{ category.atc_term or category.atc_code }}-preparat</a>
-      {% endif %}
-      <h1>{{ med.name }}</h1>
-      {% if med.strength or med.form %}
-      <p class="subtitle">{{ [med.strength, med.form] | select | join(' · ') }}</p>
-      {% endif %}
-      {% if med.npl_id %}
-      <a class="category-link" style="display:block" href="https://www.fass.se/LIF/product?userType=2&amp;nplId={{ med.npl_id }}" target="_blank" rel="noopener">Läs mer om {{ med.name }} på FASS Patient →</a>
-      {% endif %}
-      {% if med.package_description %}
-      <p class="checked-at">Förpackning: {{ med.package_description }}</p>
-      {% endif %}
-      {% if med.manufacturer %}
-      <p class="checked-at">Tillverkare: {{ med.manufacturer }}</p>
-      {% endif %}
-
-      {% set show_shortage_note = shortage_info and not shortage_info.actual_end %}
-      {% if stock_unknown %}
-        <p class="status-line unknown">⚪ Kunde inte kontrollera lagerstatus just nu</p>
-      {% elif in_stock_now %}
-        {% if few_only %}
-        <p class="status-line few">🟡 Få kvar — {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara <a href="#bristsituation">enligt Läkemedelsverket</a>{% endif %}</p>
-        {% else %}
-        <p class="status-line in">🟢 I lager på {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara <a href="#bristsituation">enligt Läkemedelsverket</a>{% endif %}</p>
+    <div class="med-main">
+      <div class="card">
+        {% if category %}
+        <a class="med-fass" style="display:block;" href="{{ category.url }}">&larr; Alla {{ category.atc_term or category.atc_code }}-preparat</a>
         {% endif %}
-      {% else %}
-        <p class="status-line out">🔴 Restnoterat — inte i lager just nu</p>
-      {% endif %}
-      {% if checked_at %}
-      <p class="checked-at">Kontrollerat: {{ checked_at }}</p>
-      {% endif %}
+        <h1 class="med-h1">{{ med.name }}</h1>
+        {% if med.npl_id %}
+        <a class="med-fass" href="https://www.fass.se/LIF/product?userType=2&amp;nplId={{ med.npl_id }}" target="_blank" rel="noopener">Läs mer på FASS Patient &rarr;</a>
+        {% endif %}
+        {% if med.package_description %}
+        <p class="med-meta-line">Förpackning: {{ med.package_description }}</p>
+        {% endif %}
+        {% if med.manufacturer %}
+        <p class="med-meta-line">Tillverkare: {{ med.manufacturer }}</p>
+        {% endif %}
 
-      <a class="btn-watch" href="/subscribe?npl={{ npl_pack_id }}">Bevaka det här läkemedlet</a>
+        {% set show_shortage_note = shortage_info and not shortage_info.actual_end %}
+        {% if stock_unknown %}
+          <p class="med-status unknown">Kunde inte kontrollera lagerstatus just nu</p>
+        {% elif in_stock_now %}
+          {% if few_only %}
+          <p class="med-status few">Få kvar — {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara <a href="#bristsituation">enligt Läkemedelsverket</a>{% endif %}</p>
+          {% else %}
+          <p class="med-status in">I lager på {{ pharmacies | length }} apotek{% if show_shortage_note %}, men ändå en bristvara <a href="#bristsituation">enligt Läkemedelsverket</a>{% endif %}</p>
+          {% endif %}
+        {% else %}
+          <p class="med-status out">Restnoterat — inte i lager just nu</p>
+        {% endif %}
+        {% if checked_at %}
+        <p class="med-checked">Kontrollerat: {{ checked_at }}</p>
+        {% endif %}
 
-      {% if pharmacies %}
-      {% macro pharmacy_table(list, limit=20) %}
-        <table>
-          <thead><tr><th>Apotek</th><th>Status</th></tr></thead>
-          <tbody>
-            {% for ph in list[:limit] %}
-            <tr>
-              <td>{{ macros.pharmacy_link(ph) }}</td>
-              <td class="status {{ ph.status | lower }}">{{ macros.pharmacy_status(ph.status) }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% if list | length > limit %}
-        <details>
-          <summary>Visa alla {{ list | length }}</summary>
+        {% if stock_unknown %}
+        <a class="btn-watch med-cta-responsive" href="/subscribe?npl={{ npl_pack_id }}">Bevaka det här läkemedlet</a>
+        {% elif in_stock_now %}
+        <a class="btn-watch med-cta-responsive" href="/subscribe?npl={{ npl_pack_id }}">Bevaka &mdash; få e-post om det blir restnoterat</a>
+        {% else %}
+        <a class="btn-watch med-cta-responsive" href="/subscribe?npl={{ npl_pack_id }}">Bevaka &mdash; få e-post när det finns igen</a>
+        {% endif %}
+
+        {% if pharmacies %}
+        {% macro pharmacy_table(list, limit=20) %}
           <table>
+            <thead><tr><th>Apotek</th><th>Status</th></tr></thead>
             <tbody>
-              {% for ph in list[limit:] %}
+              {% for ph in list[:limit] %}
               <tr>
                 <td>{{ macros.pharmacy_link(ph) }}</td>
                 <td class="status {{ ph.status | lower }}">{{ macros.pharmacy_status(ph.status) }}</td>
@@ -213,152 +104,165 @@
               {% endfor %}
             </tbody>
           </table>
-        </details>
-        {% endif %}
-      {% endmacro %}
+          {% if list | length > limit %}
+          <details>
+            <summary>Visa alla {{ list | length }}</summary>
+            <table>
+              <tbody>
+                {% for ph in list[limit:] %}
+                <tr>
+                  <td>{{ macros.pharmacy_link(ph) }}</td>
+                  <td class="status {{ ph.status | lower }}">{{ macros.pharmacy_status(ph.status) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </details>
+          {% endif %}
+        {% endmacro %}
 
-      <form method="get" id="omrade-form" style="margin:0.75rem 0;display:flex;gap:0.5rem;align-items:center">
-        <label for="omrade-input" style="font-size:0.85rem;color:#555">Postnummer:</label>
-        <input id="omrade-input" name="omrade" type="text" inputmode="numeric" maxlength="6"
-               autocomplete="postal-code"
-               value="{{ omrade_input or '' }}" placeholder="T.ex. 17157"
-               style="width:6rem;padding:0.3rem 0.5rem;border:1px solid #ccc;border-radius:4px">
-        <button type="submit" style="padding:0.3rem 0.7rem;border:1px solid #22D3A5;background:#22D3A5;color:#0D1B2A;border-radius:4px;font-weight:600;cursor:pointer">Visa nära mig</button>
-      </form>
-      <script>
-      (function () {
-        // Plain URL query param, nothing stored on the device (no cookie,
-        // no localStorage) -- this site deliberately has neither, to avoid
-        // ever needing a cookie-consent banner (see Umami usage sitewide).
-        // The postnummer only lives as long as this one navigation/link.
-        document.getElementById('omrade-form').addEventListener('submit', function (e) {
-          e.preventDefault();
-          // Full postnummer, NOT truncated here -- the server normalizes it
-          // for matching (pharmacy_grouping.normalize_omrade) but redisplays
-          // this exact raw value in the field, so it never looks truncated
-          // back at the visitor.
-          var v = document.getElementById('omrade-input').value.replace(/\D/g, '');
-          var url = new URL(window.location.href);
-          if (v) { url.searchParams.set('omrade', v); } else { url.searchParams.delete('omrade'); }
-          window.location.href = url.pathname + url.search;
-        });
-      })();
-      </script>
+        <form method="get" id="omrade-form" class="med-filter">
+          <label for="omrade-input">Postnummer:</label>
+          <input id="omrade-input" name="omrade" type="text" inputmode="numeric" maxlength="6"
+                 autocomplete="postal-code"
+                 value="{{ omrade_input or '' }}" placeholder="T.ex. 17157">
+          <button type="submit">Visa nära mig</button>
+        </form>
+        <script>
+        (function () {
+          // Plain URL query param, nothing stored on the device (no cookie,
+          // no localStorage) -- this site deliberately has neither, to avoid
+          // ever needing a cookie-consent banner (see Umami usage sitewide).
+          // The postnummer only lives as long as this one navigation/link.
+          document.getElementById('omrade-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            // Full postnummer, NOT truncated here -- the server normalizes it
+            // for matching (pharmacy_grouping.normalize_omrade) but redisplays
+            // this exact raw value in the field, so it never looks truncated
+            // back at the visitor.
+            var v = document.getElementById('omrade-input').value.replace(/\D/g, '');
+            var url = new URL(window.location.href);
+            if (v) { url.searchParams.set('omrade', v); } else { url.searchParams.delete('omrade'); }
+            window.location.href = url.pathname + url.search;
+          });
+        })();
+        </script>
 
-      {% if omrade %}
-        {% if nara %}
-        <h3 class="section-heading" style="margin-top:1rem">Nära dig ({{ omrade }}xx)</h3>
-        {{ pharmacy_table(nara) }}
-        {% endif %}
-        {% if region %}
-        <h3 class="section-heading" style="margin-top:1rem">I regionen</h3>
-        {{ pharmacy_table(region) }}
-        {% endif %}
-        {% if not nara and not region %}
-        <p class="checked-at">Inga apotek hittades i eller nära {{ omrade }}xx — se övriga apotek nedan.</p>
-        {% endif %}
-        <h3 class="section-heading" style="margin-top:1rem">Övriga apotek i Sverige</h3>
-        {{ pharmacy_table(rest) }}
-      {% else %}
-        {{ pharmacy_table(pharmacies) }}
-      {% endif %}
-
-      {% endif %}
-    </div>
-
-    {% if shortage_info %}
-    <div class="card" id="bristsituation">
-      <h2 class="section-heading">Nationell bristsituation (Läkemedelsverket)</h2>
-      <p>
-        Läkemedelsverket har registrerat en nationell bristsituation för {{ med.name }}, sedan {{ shortage_info.forecasted_start }}
-        {%- if shortage_info.actual_end %}
-        . Enligt Läkemedelsverket är den bristen nu avslutad, sedan {{ shortage_info.actual_end }}.
-        {%- elif shortage_info.forecasted_end %}
-        (prognos: tillbaka omkring {{ shortage_info.forecasted_end }}).
-        {%- else %}
-        .
-        {%- endif %}
-        {%- if in_stock_now %}
-        Men just nu finns det ändå hos {{ pharmacies | length }} apotek — se listan ovan.
-        {%- elif stock_unknown %}
-        Vi kunde inte kontrollera lagerstatus just nu.
-        {%- else %}
-        Just nu syns det inte hos något apotek vi bevakar, vilket stämmer med bristregistreringen.
-        {%- endif %}
-      </p>
-      <p class="checked-at" style="margin-top:0.5rem">
-        Det här är Läkemedelsverkets egen nationella registrering och prognos — inte samma sak som "Historik" nedan,
-        som visar vad vi faktiskt sett i lager hos apotek.
-      </p>
-    </div>
-    {% endif %}
-
-    {% if history %}
-    <div class="card">
-      <h2 class="section-heading">Historik</h2>
-      {% if history.at_least %}
-        {% if history.in_stock %}
-        <p>Vi har bevakat det här läkemedlet sedan {{ history.reliable_since_date }}
-           och inte sett det restnoterat under den tiden.</p>
+        {% if omrade %}
+          {% if nara %}
+          <h3 class="section-heading" style="margin-top:1rem">Nära dig ({{ omrade }}xx)</h3>
+          {{ pharmacy_table(nara) }}
+          {% endif %}
+          {% if region %}
+          <h3 class="section-heading" style="margin-top:1rem">I regionen</h3>
+          {{ pharmacy_table(region) }}
+          {% endif %}
+          {% if not nara and not region %}
+          <p class="med-note">Inga apotek hittades i eller nära {{ omrade }}xx — se övriga apotek nedan.</p>
+          {% endif %}
+          <h3 class="section-heading" style="margin-top:1rem">Övriga apotek i Sverige</h3>
+          {{ pharmacy_table(rest) }}
         {% else %}
-        <p>Vi har bevakat det här läkemedlet sedan {{ history.reliable_since_date }}
-           och det har varit restnoterat under hela den tiden.</p>
+          {{ pharmacy_table(pharmacies) }}
         {% endif %}
-      {% else %}
-        {% if history.in_stock %}
-        <p>Kom tillbaka i lager för
-           {% if history.days is not none %}{{ history.days }} dagar{% else %}en tid{% endif %}
-           (sedan {{ history.since_date }}).</p>
-        {% else %}
-        <p>Restnoterat sedan
-           {% if history.days is not none %}{{ history.days }} dagar{% else %}en tid{% endif %}
-           (sedan {{ history.since_date }}).</p>
-        {% endif %}
-      {% endif %}
-    </div>
-    {% endif %}
 
-    {% if siblings %}
-    <div class="card">
-      <h2 class="section-heading">Andra styrkor/förpackningar</h2>
-      <div class="siblings">
-        {% for s in siblings %}
-        <a href="/lakemedel/{{ s.npl_pack_id }}-{{ s.slug }}">{{ s.name }}{% if s.package_description %} <span style="color:#888;font-size:0.85em">({{ s.package_description }})</span>{% endif %}</a>
-        {% endfor %}
+        {% endif %}
       </div>
-    </div>
-    {% endif %}
 
-    <div class="card">
-      <h2 class="section-heading">Så funkar bevakningen</h2>
-      <p class="steps">
-        🔔 <strong>Bevaka</strong> med din e-postadress &nbsp;→&nbsp;
-        📬 <strong>Få e-post</strong> så fort läkemedlet finns i lager igen &nbsp;→&nbsp;
-        ⏳ Bevakningen gäller i {{ ttl_days }} dagar och kan förlängas med ett klick.
-      </p>
-    </div>
+      {% if shortage_info %}
+      <div class="card" id="bristsituation">
+        <div class="med-label">Nationell bristsituation &middot; Läkemedelsverket</div>
+        <p class="med-p">
+          Läkemedelsverket har registrerat en nationell bristsituation för {{ med.name }}, sedan {{ shortage_info.forecasted_start }}
+          {%- if shortage_info.actual_end %}
+          . Enligt Läkemedelsverket är den bristen nu avslutad, sedan {{ shortage_info.actual_end }}.
+          {%- elif shortage_info.forecasted_end %}
+          (prognos: tillbaka omkring {{ shortage_info.forecasted_end }}).
+          {%- else %}
+          .
+          {%- endif %}
+          {%- if in_stock_now %}
+          Men just nu finns det ändå hos {{ pharmacies | length }} apotek — se listan ovan.
+          {%- elif stock_unknown %}
+          Vi kunde inte kontrollera lagerstatus just nu.
+          {%- else %}
+          Just nu syns det inte hos något apotek vi bevakar, vilket stämmer med bristregistreringen.
+          {%- endif %}
+        </p>
+        <p class="med-note">
+          Det här är Läkemedelsverkets egen nationella registrering och prognos — inte samma sak som "Historik" nedan,
+          som visar vad vi faktiskt sett i lager hos apotek.
+        </p>
+      </div>
+      {% endif %}
 
-    {% if show_partner_guide %}
-    <a class="card partner-guide" href="https://partnerguiden.se/?utm_source=varfinnsdet&amp;utm_content=lakemedel" target="_blank" rel="noopener" id="partner-guide-link">
-      <h2 class="section-heading">Relaterad guide för partnern</h2>
-      <p>
-        Klimakteriet är en naturlig omställning som kan påverka både kropp och känslor.
-        På <strong class="brand">Partnerguiden</strong> finns en guide för partnern med tips
-        om hur du kan förstå och stötta på ett bra sätt.
-      </p>
-      <p>Om du går genom klimakteriet: tipsa din partner om denna guide.</p>
-      <p class="disclosure">(Partnerguiden.se drivs av samma team som {{ site_name }}.)</p>
-    </a>
-    {% endif %}
+      {% if history %}
+      <div class="card">
+        <div class="med-label">Historik</div>
+        {% if history.at_least %}
+          {% if history.in_stock %}
+          <p class="med-p">Vi har bevakat det här läkemedlet sedan {{ history.reliable_since_date }}
+             och inte sett det restnoterat under den tiden.</p>
+          {% else %}
+          <p class="med-p">Vi har bevakat det här läkemedlet sedan {{ history.reliable_since_date }}
+             och det har varit restnoterat under hela den tiden.</p>
+          {% endif %}
+        {% else %}
+          {% if history.in_stock %}
+          <p class="med-p">Kom tillbaka i lager för
+             {% if history.days is not none %}{{ history.days }} dagar{% else %}en tid{% endif %}
+             (sedan {{ history.since_date }}).</p>
+          {% else %}
+          <p class="med-p">Restnoterat sedan
+             {% if history.days is not none %}{{ history.days }} dagar{% else %}en tid{% endif %}
+             (sedan {{ history.since_date }}).</p>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% endif %}
 
-    <div class="card">
-      <h2 class="section-heading">Vanliga frågor</h2>
-      <dl class="faq">
-        {% for item in faq_list %}
-        <dt>{{ item.question }}</dt>
-        <dd>{{ item.answer }}</dd>
-        {% endfor %}
-      </dl>
+      {% if siblings %}
+      <div class="card">
+        <div class="med-label">Andra styrkor/förpackningar</div>
+        <div class="med-siblings">
+          {% for s in siblings %}
+          <a href="/lakemedel/{{ s.npl_pack_id }}-{{ s.slug }}">{{ s.name }}{% if s.package_description %} <span style="color:var(--muted);font-size:0.85em">({{ s.package_description }})</span>{% endif %}</a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="card">
+        <div class="med-label">Så funkar bevakningen</div>
+        <p class="med-steps">
+          🔔 <strong>Bevaka</strong> med din e-postadress &nbsp;→&nbsp;
+          📬 <strong>Få e-post</strong> så fort läkemedlet finns i lager igen &nbsp;→&nbsp;
+          ⏳ Bevakningen gäller i {{ ttl_days }} dagar och kan förlängas med ett klick.
+        </p>
+      </div>
+
+      {% if show_partner_guide %}
+      <a class="card partner-guide" href="https://partnerguiden.se/?utm_source=varfinnsdet&amp;utm_content=lakemedel" target="_blank" rel="noopener" id="partner-guide-link">
+        <div class="med-label">Relaterad guide för partnern</div>
+        <p class="med-p">
+          Klimakteriet är en naturlig omställning som kan påverka både kropp och känslor.
+          På <strong style="color:var(--cta)">Partnerguiden</strong> finns en guide för partnern med tips
+          om hur du kan förstå och stötta på ett bra sätt.
+        </p>
+        <p class="med-p">Om du går genom klimakteriet: tipsa din partner om denna guide.</p>
+        <p class="med-note">(Partnerguiden.se drivs av samma team som {{ site_name }}.)</p>
+      </a>
+      {% endif %}
+
+      <div class="card">
+        <div class="med-label">Vanliga frågor</div>
+        <dl class="faq">
+          {% for item in faq_list %}
+          <dt>{{ item.question }}</dt>
+          <dd>{{ item.answer }}</dd>
+          {% endfor %}
+        </dl>
+      </div>
     </div>
   </main>
 
