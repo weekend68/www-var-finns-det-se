@@ -205,6 +205,7 @@
       <form method="get" id="omrade-form" style="margin:0.75rem 0;display:flex;gap:0.5rem;align-items:center">
         <label for="omrade-input" style="font-size:0.85rem;color:#555">Postnummer:</label>
         <input id="omrade-input" name="omrade" type="text" inputmode="numeric" maxlength="5"
+               autocomplete="postal-code"
                value="{{ omrade_input or '' }}" placeholder="T.ex. 17157"
                style="width:6rem;padding:0.3rem 0.5rem;border:1px solid #ccc;border-radius:4px">
         <button type="submit" style="padding:0.3rem 0.7rem;border:1px solid #22D3A5;background:#22D3A5;color:#0D1B2A;border-radius:4px;font-weight:600;cursor:pointer">Visa nära mig</button>
