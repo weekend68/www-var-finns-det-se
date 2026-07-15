@@ -26,21 +26,25 @@
   <script type="application/ld+json">{{ jsonld_faq | tojson }}</script>
   {% include "_design.html" %}
   <style>
-    /* hero + integrated search (matches the approved mockup: search lives
-       inside the dark hero, not a separate white band below it) */
-    .home-hero { background: var(--panel); padding: 1.5rem 1.2rem 1.85rem; position: relative; }
-    .home-hero-inner { max-width: 620px; margin: 0 auto; }
-    .home-hero h1 { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; color: var(--panel-ink); font-size: 1.42rem; line-height: 1.32; margin: 0 0 0.55rem; text-wrap: balance; font-weight: 600; }
-    .home-hero .desc { font-family: -apple-system, sans-serif; font-size: 0.83rem; color: #C9D6D2; margin: 0 0 1.1rem; line-height: 1.6; }
-    .home-search-wrap { position: relative; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    /* one shared container: hero, meta, cards, and the cards below all line
+       up on the same left/right edges instead of each picking their own width */
+    .home-container { max-width: 1040px; margin: 0 auto; padding: 0 1.2rem; }
+    @media (min-width: 860px) { .home-container { padding: 0 3rem; } }
+
+    /* hero + integrated search (search lives inside the dark hero, not a
+       separate white band below it) */
+    .home-hero { background: var(--panel); padding: 1.5rem 0 1.85rem; }
+    .home-hero .desc { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; color: var(--panel-ink); font-size: 1.15rem; font-weight: 500; margin: 0 0 1.1rem; line-height: 1.5; max-width: 620px; text-wrap: balance; }
+    .home-search-wrap { position: relative; max-width: 620px; }
     .home-search { display: flex; border: 1.5px solid #B9C3B9; border-radius: 9px; overflow: hidden; background: #fff; box-shadow: 0 1px 2px rgba(30,43,51,.05); }
     .home-search input { flex: 1; border: none; padding: 0.75rem 0.85rem; font-size: 0.9rem; font-family: inherit; outline: none; }
     .home-search button { border: none; background: var(--cta); color: var(--cta-ink); padding: 0 1.3rem; font-weight: 700; font-size: 0.88rem; font-family: -apple-system, sans-serif; cursor: pointer; }
     .home-search button:hover { filter: brightness(1.08); }
     @media (min-width: 860px) {
-      .home-hero { padding: 3.3rem 3rem 3rem; text-align: center; }
-      .home-hero h1 { font-size: 2.05rem; line-height: 1.28; margin-bottom: 0.9rem; }
-      .home-hero .desc { font-size: 0.98rem; margin-bottom: 1.6rem; }
+      .home-hero { padding: 2.4rem 0 2.6rem; }
+      .home-hero .desc { font-size: 1.5rem; margin-bottom: 1.5rem; }
       .home-search { border-radius: 10px; box-shadow: 0 2px 10px -4px rgba(30,43,51,.1); }
       .home-search input { padding: 0.95rem 1.1rem; font-size: 0.98rem; }
       .home-search button { padding: 0 1.8rem; font-size: 0.94rem; }
@@ -52,7 +56,7 @@
     .search-item { padding: 0.75rem 1rem; cursor: pointer; font-size: 0.95rem; border-bottom: 1px solid var(--line); }
     .search-item:last-child { border-bottom: none; }
     .search-item:hover, .search-item.active { background: #F2F0E8; }
-    .search-result-card { border-left: 3px solid var(--cta); text-align: left; }
+    .search-result-card { text-align: left; max-width: 620px; margin-top: 1.5rem; }
     .search-result-card h3 { font-size: 1rem; margin-bottom: 0.75rem; color: var(--ink); }
     .pkg-list { display: flex; flex-direction: column; gap: 0.6rem; }
     .pkg-item-link { border: 1px solid var(--line); border-radius: 8px; padding: 0.65rem 0.85rem; background: #fff; }
@@ -64,9 +68,9 @@
     .pkg-stock.loading { color: #bbb; animation: blink 1.4s ease-in-out infinite; }
     @keyframes blink { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
     .pkg-visa-status { font-family: -apple-system, sans-serif; font-size: 0.76rem; font-weight: 700; color: var(--cta); }
-    .search-msg { font-size: 0.85rem; color: var(--muted); font-style: italic; padding: 0.5rem 0; }
+    .search-msg { font-size: 0.85rem; color: var(--muted); font-style: italic; padding: 0.5rem 0; margin-top: 1.5rem; }
 
-    .staleness-banner { display: none; max-width: 1040px; margin: 0 auto 1.25rem; padding: 0.6rem 1rem; border-radius: 8px;
+    .staleness-banner { display: none; margin: 1.2rem 0 0; padding: 0.6rem 1rem; border-radius: 8px;
                          font-size: 0.85rem; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
     .staleness-banner.is-visible { display: flex; }
     .staleness-banner a { color: inherit; font-weight: 600; text-decoration: underline; white-space: nowrap; }
@@ -74,14 +78,11 @@
     .staleness-3h { background: #FBE9DC; color: #8A4B00; border: 1px solid #E8B98C; }
     .staleness-1d { background: #FBE0DC; color: #A12626; border: 1px solid #E8A8A8; }
     .stale { font-size: 0.75rem; color: var(--muted); font-weight: normal; }
-    .home-meta-line { max-width: 1040px; margin: 0 auto; font-size: 0.8rem; color: var(--muted); padding: 1.5rem 1.2rem 0; }
-    @media (min-width: 860px) { .home-meta-line { padding: 1.5rem 3rem 0; } }
-    .home-main-inner { max-width: 720px; margin: 0 auto; padding: 0 1.2rem 2rem; }
     .waiting { color: var(--muted); font-style: italic; padding: 2rem 0; text-align: center; }
 
     /* "Ofta eftersökta" cards: 1 column mobile, 3-column grid desktop */
-    .home-cards-section { max-width: 1040px; margin: 0 auto; padding: 0 1.2rem 2rem; }
-    @media (min-width: 860px) { .home-cards-section { padding: 0 3rem 3.4rem; } }
+    .home-cards-section { padding: 1.25rem 0 2rem; }
+    @media (min-width: 860px) { .home-cards-section { padding: 2rem 0 3.4rem; } }
     .home-cards-eyebrow { font-family: "Iowan Old Style", Georgia, serif; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.75rem; }
     @media (min-width: 860px) { .home-cards-eyebrow { font-size: 0.8rem; letter-spacing: 0.08em; margin-bottom: 1.1rem; } }
     .home-cards-grid { display: flex; flex-direction: column; gap: 0.7rem; }
@@ -110,6 +111,8 @@
       .home-card-btn span { font-size: 0.8rem; padding: 0.5rem 1rem; }
     }
 
+    .home-below-grid { padding: 0 0 2rem; }
+    .home-below-grid .card { max-width: 720px; }
     .partner-guide { display: block; color: inherit; text-decoration: none; border: 1px solid var(--line);
                      transition: box-shadow .15s ease, border-color .15s ease; }
     .partner-guide:hover { box-shadow: 0 8px 22px -12px rgba(30,43,51,.2); border-color: var(--cta); }
@@ -119,7 +122,7 @@
     .partner-guide .disclosure { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
     .faq dt { font-family: "Iowan Old Style", Georgia, serif; font-weight: 600; font-size: 0.92rem; color: var(--ink); margin-top: 0.85rem; }
     .faq dt:first-child { margin-top: 0; }
-    .faq dd { font-size: 0.85rem; color: var(--muted); margin-top: 0.2rem; line-height: 1.55; }
+    .faq dd { font-size: 0.85rem; color: var(--muted); margin: 0.2rem 0 0; line-height: 1.55; }
   </style>
   {% include "_umami.html" %}
 </head>
@@ -128,8 +131,8 @@
   {% include "_header.html" %}
 
   <div class="home-hero">
-    <div class="home-hero-inner">
-      <h1>Vilket apotek har mitt läkemedel just nu?</h1>
+    <div class="home-container">
+      <h1 class="sr-only">Vilket apotek har mitt läkemedel just nu? &mdash; {{ site_name }}</h1>
       <p class="desc">Sök ditt läkemedel — se status och bevaka det direkt, helt gratis.</p>
       <div class="home-search-wrap">
         <div class="home-search">
@@ -143,53 +146,54 @@
   </div>
 
   <main>
-    <div id="search-result-area" class="home-main-inner" style="padding-bottom:0;"></div>
+    <div id="search-result-area" class="home-container"></div>
 
     <div id="status-cards">
     {% set is_loading = snap.status != "ok" and "cache" not in snap.status %}
     {% if is_loading %}
       <p class="waiting">⏳ {{ snap.status }}</p>
     {% else %}
-      <p class="home-meta-line">Uppdaterad: {{ snap.last_check[11:16] if snap.last_check else '—' }}</p>
-      <div id="staleness-banner" class="staleness-banner{{ ' is-visible staleness-' + staleness if staleness else '' }}" style="max-width:1040px; margin-left:auto; margin-right:auto;">
-        <span id="staleness-text">
-          {% if staleness == '1d' %}⚠️ Informationen är minst ett dygn gammal.
-          {% elif staleness == '3h' %}⚠️ Informationen är mer än tre timmar gammal.
-          {% elif staleness == '1h' %}ℹ️ Informationen är mer än en timme gammal.
-          {% endif %}
-        </span>
-        <a href="/">Ladda om för färsk information →</a>
-      </div>
-      <div class="home-cards-section">
-        <div class="home-cards-eyebrow">Ofta eftersökta läkemedel</div>
-        <div class="home-cards-grid">
-          {% for p in snap.products %}
-            {% set pharmacies = p.pharmacies %}
-            {% set is_stale = snap.status != "ok" %}
-            {% if p.error %}
-              {% set status_class, status_text = 'unknown', 'Fel: ' + p.error %}
-            {% elif not pharmacies %}
-              {% set status_class, status_text = 'out', 'Restnoterat' %}
-            {% elif pharmacies | selectattr("status", "equalto", "IN_STOCK") | list %}
-              {% set status_class, status_text = 'in', 'I lager' %}
-            {% else %}
-              {% set status_class, status_text = 'in', 'Få kvar' %}
+      <div class="home-container">
+        <div id="staleness-banner" class="staleness-banner{{ ' is-visible staleness-' + staleness if staleness else '' }}">
+          <span id="staleness-text">
+            {% if staleness == '1d' %}⚠️ Informationen är minst ett dygn gammal.
+            {% elif staleness == '3h' %}⚠️ Informationen är mer än tre timmar gammal.
+            {% elif staleness == '1h' %}ℹ️ Informationen är mer än en timme gammal.
             {% endif %}
-            <a class="home-card" href="{{ p.lakemedel_url }}">
-              <div>
-                <h2>{{ p.name }}{% if is_stale %} <span class="stale">(från cache)</span>{% endif %}</h2>
-                <span class="home-card-status {{ status_class }}">{{ status_text }}</span>
-                <p class="home-card-meta">{{ pharmacies | length }} apotek &middot; {{ snap.last_check[11:16] if snap.last_check else '—' }}</p>
-              </div>
-              <span class="home-card-btn"><span>Visa status</span></span>
-            </a>
-          {% endfor %}
+          </span>
+          <a href="/">Ladda om för färsk information →</a>
+        </div>
+        <div class="home-cards-section">
+          <div class="home-cards-eyebrow">Ofta eftersökta läkemedel</div>
+          <div class="home-cards-grid">
+            {% for p in snap.products %}
+              {% set pharmacies = p.pharmacies %}
+              {% set is_stale = snap.status != "ok" %}
+              {% if p.error %}
+                {% set status_class, status_text = 'unknown', 'Fel: ' + p.error %}
+              {% elif not pharmacies %}
+                {% set status_class, status_text = 'out', 'Restnoterat' %}
+              {% elif pharmacies | selectattr("status", "equalto", "IN_STOCK") | list %}
+                {% set status_class, status_text = 'in', 'I lager' %}
+              {% else %}
+                {% set status_class, status_text = 'in', 'Få kvar' %}
+              {% endif %}
+              <a class="home-card" href="{{ p.lakemedel_url }}">
+                <div>
+                  <h2>{{ p.name }}{% if is_stale %} <span class="stale">(från cache)</span>{% endif %}</h2>
+                  <span class="home-card-status {{ status_class }}">{{ status_text }}</span>
+                  <p class="home-card-meta">{{ pharmacies | length }} apotek &middot; {{ snap.last_check[11:16] if snap.last_check else '—' }}</p>
+                </div>
+                <span class="home-card-btn"><span>Visa status</span></span>
+              </a>
+            {% endfor %}
+          </div>
         </div>
       </div>
     {% endif %}
     </div><!-- #status-cards -->
 
-    <div class="home-main-inner">
+    <div class="home-container home-below-grid">
       {% if show_partner_guide %}
       <a class="card partner-guide" href="https://partnerguiden.se/?utm_source=varfinnsdet&amp;utm_content=startsidan" target="_blank" rel="noopener" id="partner-guide-link">
         <h2 class="section-heading">Relaterad guide för partnern</h2>

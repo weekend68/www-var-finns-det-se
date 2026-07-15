@@ -54,7 +54,7 @@
     <div class="med-main">
       <div class="card">
         {% if category %}
-        <a class="med-fass" style="display:block;" href="{{ category.url }}">&larr; Alla {{ category.atc_term or category.atc_code }}-preparat</a>
+        <a class="med-breadcrumb" href="{{ category.url }}">&larr; Alla {{ category.atc_term or category.atc_code }}-preparat</a>
         {% endif %}
         <h1 class="med-h1">{{ med.name }}</h1>
         {% if med.npl_id %}
