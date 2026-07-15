@@ -13,11 +13,11 @@ Console query data -- do not casually reword them.
 """
 
 
-def build_medication_faq(med, pharmacies, in_stock_now, shortage_info, history, siblings):
+def build_medication_faq(med, pharmacies, in_stock_now, shortage_info, history, siblings, manufacturer=None):
     """Return [{"question", "answer"}, ...] for one medication. Every
-    question that depends on optional data (shortage_info/history/siblings)
-    is only included if that data actually exists -- never a half-built or
-    empty question."""
+    question that depends on optional data (shortage_info/history/siblings/
+    manufacturer) is only included if that data actually exists -- never a
+    half-built or empty question."""
     name = med["name"]
     items = []
 
@@ -124,7 +124,15 @@ def build_medication_faq(med, pharmacies, in_stock_now, shortage_info, history, 
                 history_answer = f"{name} har varit restnoterat i {days_text} (sedan {history['since_date']})."
         items.append({"question": f"Hur länge har {name} varit i lager/restnoterat?", "answer": history_answer})
 
-    # Q7: sibling packages -- only if there actually are any.
+    # Q7: manufacturer -- only if Läkemedelsverkets feed (or checker.PRODUCTS)
+    # actually carries a MarketAuthorisationHolderName for this medication.
+    if manufacturer:
+        items.append({
+            "question": f"Vem tillverkar {name}?",
+            "answer": f"{name} tillverkas av {manufacturer}.",
+        })
+
+    # Q8: sibling packages -- only if there actually are any.
     if siblings:
         sibling_names = [s["name"] for s in siblings[:5]]
         items.append({

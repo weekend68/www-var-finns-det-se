@@ -31,6 +31,15 @@ CREATE TABLE IF NOT EXISTS medications (
     -- carries npl_id per row). May be NULL for medications resolved only via
     -- fass.lookup_name()'s package-level fallback in routes/lakemedel.py.
     npl_id              TEXT,
+    -- Marketing authorisation holder (Läkemedelsverket's
+    -- MarketAuthorisationHolderName field) -- the actual manufacturer/brand
+    -- owner, e.g. "Sandoz A/S". Populated for curated checker.PRODUCTS rows
+    -- via seed_products() and for catalogue rows via national_shortages.py's
+    -- _backfill_medications() (the feed carries this per product). May be
+    -- NULL for medications resolved only via fass.lookup_name()'s
+    -- package-level fallback in routes/lakemedel.py, which has no access to
+    -- this field.
+    manufacturer        TEXT,
     created_at          TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -141,6 +150,7 @@ def init_db():
     con.executescript(_SCHEMA)
     _migrate_add_column(con, "medications", "package_description", "TEXT")
     _migrate_add_column(con, "medications", "npl_id", "TEXT")
+    _migrate_add_column(con, "medications", "manufacturer", "TEXT")
     con.commit()
     con.close()
 
@@ -227,7 +237,8 @@ def escape_like(s):
 
 def get_medication(db, npl_pack_id):
     return db.execute(
-        "SELECT npl_pack_id, name, strength, form, package_description, npl_id FROM medications WHERE npl_pack_id=?",
+        "SELECT npl_pack_id, name, strength, form, package_description, npl_id, manufacturer "
+        "FROM medications WHERE npl_pack_id=?",
         [npl_pack_id],
     ).fetchone()
 

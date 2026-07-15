@@ -288,16 +288,27 @@ def lakemedel(id_slug):
     jsonld = {
         "@context": "https://schema.org",
         "@type": "Product",
+        # Google has no dedicated "Drug" rich-result type (verified against
+        # https://developers.google.com/search/docs/appearance/structured-data/search-gallery)
+        # -- switching @type away from Product would lose the Offer/
+        # availability tag in search results for nothing in return. This
+        # additionalType is the hybrid: keep Product (and its availability
+        # support), but also flag the underlying real-world type as a Drug.
+        "additionalType": "https://schema.org/Drug",
         "name": med["name"],
         "sku": npl_pack_id,
         "description": description,
         "offers": offer,
     }
+    if med["manufacturer"]:
+        jsonld["brand"] = {"@type": "Brand", "name": med["manufacturer"]}
 
     # Built once here and handed to the template for BOTH the visible <dl>
     # FAQ HTML and the FAQPage JSON-LD block -- never two separate sources
     # for the same content (see faq.py's module docstring).
-    faq_list = faq_builder.build_medication_faq(med, pharmacies, in_stock_now, shortage_info, history, siblings)
+    faq_list = faq_builder.build_medication_faq(
+        med, pharmacies, in_stock_now, shortage_info, history, siblings, med["manufacturer"]
+    )
     jsonld_faq = {
         "@context": "https://schema.org",
         "@type": "FAQPage",

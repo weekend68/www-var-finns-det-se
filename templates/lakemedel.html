@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ med.name }} — lagerstatus | {{ site_name }}</title>
-  <meta name="description" content="Är {{ med.name }} i lager på apotek just nu? Se aktuell lagerstatus och bevaka gratis — få e-post när det finns igen.">
+  <meta name="description" content="Är {{ med.name }} slut på ditt apotek? Se lagerstatus för din medicin och bevaka läkemedlet gratis — få e-post när det finns igen.">
   <meta name="robots" content="{{ 'index, follow' if indexable else 'noindex, follow' }}">
   <link rel="canonical" href="{{ canonical_url }}">
   <meta property="og:type"        content="website">
@@ -161,6 +161,9 @@
       {% endif %}
       {% if med.package_description %}
       <p class="checked-at">Förpackning: {{ med.package_description }}</p>
+      {% endif %}
+      {% if med.manufacturer %}
+      <p class="checked-at">Tillverkare: {{ med.manufacturer }}</p>
       {% endif %}
 
       {% set show_shortage_note = shortage_info and not shortage_info.actual_end %}
