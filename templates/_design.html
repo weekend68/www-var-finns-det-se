@@ -1,0 +1,147 @@
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --ink: #1E2B33;
+    --muted: #5B6B70;
+    --panel: #0F1B2E;
+    --panel-ink: #F3F1EA;
+    --cta: #3E6B8C;
+    --cta-ink: #FFFFFF;
+    --line: #E1DDD2;
+    --stock-in: #2F7D4F;
+    --stock-out: #B5482E;
+    --dot: #34C77B;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  h1, h2, .serif { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+  main { flex: 1; }
+  a { color: var(--cta); }
+
+  /* ---- logo (also reused as favicon source, see routes/kategori.py issue) ---- */
+  .home-logo { display: flex; align-items: center; gap: 0.55rem; }
+  .home-logo .dot {
+    width: 12px; height: 12px; border-radius: 50%; background: var(--dot);
+    box-shadow: 0 0 0 3px rgba(52,199,123,.16); flex-shrink: 0;
+    animation: dot-pulse 2.4s infinite;
+  }
+  @keyframes dot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) { .home-logo .dot { animation: none; } }
+  .home-logo b { font-family: "Iowan Old Style", Georgia, serif; font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em; color: var(--panel-ink); }
+  .home-logo b span { color: #6FA695; }
+
+  /* ---- site header: logo + responsive nav (real media-query breakpoint, not two separate renders) ---- */
+  .site-header { background: var(--panel); position: relative; }
+  .site-header-inner { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.2rem; max-width: 1040px; margin: 0 auto; }
+  .site-nav-desktop { display: none; align-items: center; gap: 2rem; }
+  .site-nav-desktop a { font-family: -apple-system, sans-serif; font-size: 0.88rem; color: #C9D6D2; text-decoration: none; }
+  .site-nav-desktop a.is-active { color: #fff; font-weight: 600; }
+  .site-nav-desktop a:hover { color: #fff; }
+  .site-burger { background: none; border: 1px solid #3A4B52; border-radius: 6px; width: 34px; height: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
+  .site-burger span { display: block; width: 16px; height: 1.5px; background: #E7E4DA; }
+  .site-nav-toggle { position: absolute; opacity: 0; pointer-events: none; }
+  .site-nav-panel {
+    position: fixed; inset: 0; background: var(--panel); color: var(--panel-ink);
+    padding: 1.5rem 1.4rem; transform: translateX(100%); transition: transform .28s ease;
+    display: flex; flex-direction: column; font-family: -apple-system, sans-serif; z-index: 50;
+  }
+  .site-nav-toggle:checked ~ .site-nav-panel { transform: translateX(0); }
+  .site-nav-panel .site-header-inner { padding: 0; margin-bottom: 2rem; }
+  .site-nav-close { background: none; border: 1px solid #3A4B52; border-radius: 6px; width: 34px; height: 30px; color: #E7E4DA; font-size: 1.1rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .site-nav-links { display: flex; flex-direction: column; gap: 1.5px; }
+  .site-nav-links a { display: block; padding: 1rem 0.2rem; color: #F3F1EA; text-decoration: none; font-size: 1.05rem; font-weight: 600; border-bottom: 1px solid #263640; }
+  .site-nav-links a:first-child { border-top: 1px solid #263640; }
+  .site-nav-links a.is-active { color: #6FA695; }
+  .site-nav-foot { margin-top: auto; font-family: "Iowan Old Style", Georgia, serif; font-size: 0.78rem; color: #7E9A93; }
+  @media (min-width: 860px) {
+    .site-nav-desktop { display: flex; }
+    .site-burger, .site-nav-panel { display: none; }
+  }
+
+  /* ---- minimal header (subscribe/manage/message: logo only, no nav/hero) ---- */
+  .med-topbar-mini { background: var(--panel); padding: 0.9rem 1.2rem; }
+
+  /* ---- full hero (tagline + contextual description) ---- */
+  .page-hero { background: var(--panel); padding: 1.3rem 1.2rem 1.6rem; }
+  .page-hero-inner { max-width: 680px; margin: 0 auto; }
+  .page-hero .hero-breadcrumb { display: block; font-family: -apple-system, sans-serif; font-size: 0.8rem; color: #9FBAC9; text-decoration: none; margin-bottom: 0.6rem; }
+  .page-hero .hero-breadcrumb:hover { color: #fff; }
+  .page-hero .tagline { font-family: -apple-system, sans-serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #8FB0A6; margin: 0 0 0.55rem; }
+  .page-hero p.desc { font-family: -apple-system, sans-serif; font-size: 0.85rem; color: #C9D6D2; line-height: 1.6; margin: 0; }
+  @media (min-width: 860px) { .page-hero-inner { max-width: 780px; } .page-hero p.desc { font-size: 0.95rem; } }
+
+  /* ---- shared card/typography vocabulary (also targeted by JS-rendered search markup) ---- */
+  .card, .med-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 1.2rem 1.3rem; margin-bottom: 1rem; max-width: 720px; }
+  .med-h1, main h1 { font-size: 1.35rem; font-weight: 600; color: var(--ink); line-height: 1.3; margin: 0 0 0.3rem; }
+  .med-h2, main h2.med-h2 { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; font-size: 1.05rem; font-weight: 600; color: var(--ink); margin: 1.75rem 0 0.6rem; letter-spacing: 0.01em; }
+  .med-h2:first-of-type { margin-top: 0; }
+  .med-subtitle { font-size: 0.88rem; color: var(--muted); margin: 0 0 0.6rem; }
+  .med-fass, .cat-wiki-link { display: inline-block; font-size: 0.82rem; color: var(--cta); text-decoration: none; margin-top: 0.4rem; }
+  .med-fass:hover, .cat-wiki-link:hover { text-decoration: underline; }
+  .med-meta-line { font-size: 0.8rem; color: var(--muted); margin: 0.15rem 0; }
+  .med-p { font-size: 0.9rem; line-height: 1.7; color: var(--ink); margin: 0 0 0.6rem; }
+  .med-note { font-size: 0.78rem; color: var(--muted); margin-top: 0.5rem; }
+  .med-list { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .med-list li { position: relative; padding-left: 1.1rem; font-size: 0.9rem; line-height: 1.6; color: var(--ink); }
+  .med-list li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 5px; height: 5px; border-radius: 50%; background: var(--cta); }
+  .med-link { color: var(--cta); text-decoration: underline; text-underline-offset: 2px; }
+  .section-heading { font-family: "Iowan Old Style", Georgia, serif; font-size: 0.78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; max-width: 720px; }
+  .faq dt { font-family: "Iowan Old Style", Georgia, serif; font-weight: 600; font-size: 0.9rem; color: var(--ink); margin-top: 0.75rem; }
+  .faq dt:first-child { margin-top: 0; }
+  .faq dd { font-size: 0.85rem; color: var(--muted); margin-top: 0.2rem; line-height: 1.5; }
+
+  /* ---- status colors (kept as the same class names the JS + old templates already emit) ---- */
+  .status { font-weight: 600; }
+  .in_stock, .status.in_stock { color: var(--stock-in); }
+  .few_in_stock, .status.few_in_stock { color: #9A7A1E; }
+  .med-status { display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem; font-weight: 700; margin: 1rem 0 0.3rem; }
+  .med-status::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .med-status.in, .med-status.few { color: var(--stock-in); }
+  .med-status.out { color: var(--stock-out); }
+  .med-status.unknown { color: var(--muted); }
+  .med-checked { font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace; font-size: 0.78rem; color: var(--muted); margin: 0 0 1.1rem; font-variant-numeric: tabular-nums; }
+
+  /* ---- buttons: same class the JS already emits, restyled ---- */
+  .btn-watch, .med-cta {
+    display: inline-block; background: var(--cta); color: var(--cta-ink); font-weight: 700;
+    padding: 0.65rem 1.3rem; border-radius: 8px; text-decoration: none; font-size: 0.85rem;
+    border: none; cursor: pointer; font-family: inherit;
+  }
+  .btn-watch:hover, .med-cta:hover { filter: brightness(1.08); }
+  .med-cta-full { display: block; width: 100%; text-align: center; }
+  .med-cta-responsive { display: block; width: 100%; text-align: center; margin-bottom: 1rem; }
+  @media (min-width: 600px) { .med-cta-responsive { display: inline-block; width: auto; } }
+
+  /* ---- single click target: whole card links to the detail page, no separate "Mer info" link ---- */
+  .card-link, .pkg-item-link {
+    display: block; text-decoration: none; color: inherit;
+    transition: box-shadow .15s ease, border-color .15s ease;
+  }
+  .card-link:hover, .card-link:focus-visible, .pkg-item-link:hover, .pkg-item-link:focus-visible {
+    box-shadow: 0 6px 18px -8px rgba(30,43,51,.2); border-color: #C9C3B6;
+  }
+  .card-link:focus-visible, .pkg-item-link:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
+  .card-status-line { display: flex; align-items: center; gap: 0.4rem; font-size: 0.92rem; font-weight: 600; margin: 0.3rem 0 0.6rem; }
+  .card-status-line .visa-status { margin-left: auto; font-family: -apple-system, sans-serif; font-size: 0.78rem; font-weight: 700; color: var(--cta); }
+  .card-meta { font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace; font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; margin: 0; }
+
+  /* ---- misc shared ---- */
+  .med-fass-link { color: var(--cta); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; padding: 0.45rem 0.4rem; border-bottom: 2px solid var(--line); color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  td { padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--line); }
+  details summary { cursor: pointer; font-size: 0.85rem; color: var(--cta); padding: 0.4rem 0; list-style: none; font-family: -apple-system, sans-serif; }
+  details summary::before { content: "▸ "; }
+  details[open] summary::before { content: "▾ "; }
+
+  footer { max-width: 720px; margin: 2rem auto 0; padding: 1rem 1.5rem 1.5rem; font-size: 0.75rem; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--line); }
+  footer a { color: var(--muted); }
+</style>

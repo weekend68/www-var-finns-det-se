@@ -1,0 +1,48 @@
+{%- if header_mode == 'minimal' -%}
+<div class="med-topbar-mini">
+  <a href="/" style="text-decoration:none;">
+    <div class="home-logo"><span class="dot"></span><b>{{ name_base }}<span>{{ name_tld }}</span></b></div>
+  </a>
+</div>
+{%- else -%}
+<header class="site-header">
+  <input type="checkbox" id="site-nav-toggle" class="site-nav-toggle">
+  <div class="site-header-inner">
+    <a href="/" style="text-decoration:none;">
+      <div class="home-logo"><span class="dot"></span><b>{{ name_base }}<span>{{ name_tld }}</span></b></div>
+    </a>
+    <nav class="site-nav-desktop" aria-label="Huvudmeny">
+      <a href="/"{% if nav_active == 'hem' %} class="is-active"{% endif %}>Hem</a>
+      <a href="/kategorier"{% if nav_active == 'kategorier' %} class="is-active"{% endif %}>Bläddra bristläkemedel</a>
+      <a href="/om"{% if nav_active == 'om' %} class="is-active"{% endif %}>Om oss</a>
+      <a href="/privacy"{% if nav_active == 'privacy' %} class="is-active"{% endif %}>Integritet</a>
+    </nav>
+    <label for="site-nav-toggle" class="site-burger" aria-label="Meny"><span></span><span></span><span></span></label>
+  </div>
+  <div class="site-nav-panel">
+    <div class="site-header-inner">
+      <div class="home-logo"><span class="dot"></span><b>{{ name_base }}<span>{{ name_tld }}</span></b></div>
+      <label for="site-nav-toggle" class="site-nav-close" aria-label="Stäng">&times;</label>
+    </div>
+    <nav class="site-nav-links" aria-label="Huvudmeny (mobil)">
+      <a href="/"{% if nav_active == 'hem' %} class="is-active"{% endif %}>Hem</a>
+      <a href="/kategorier"{% if nav_active == 'kategorier' %} class="is-active"{% endif %}>Bläddra bristläkemedel</a>
+      <a href="/om"{% if nav_active == 'om' %} class="is-active"{% endif %}>Om oss</a>
+      <a href="/privacy"{% if nav_active == 'privacy' %} class="is-active"{% endif %}>Integritet</a>
+    </nav>
+    <div class="site-nav-foot">Tryck på &times; för att stänga</div>
+  </div>
+</header>
+{%- if show_hero != false %}
+<div class="page-hero">
+  <div class="page-hero-inner">
+    {%- if hero_breadcrumb_url %}
+    <a href="{{ hero_breadcrumb_url }}" class="hero-breadcrumb">&larr; {{ hero_breadcrumb_text }}</a>
+    {%- endif %}
+    <p class="tagline">Vilket apotek har mitt läkemedel just nu?</p>
+    {%- if hero_desc %}<p class="desc">{{ hero_desc }}</p>{% endif %}
+    {%- if hero_extra %}{{ hero_extra | safe }}{% endif -%}
+  </div>
+</div>
+{%- endif -%}
+{%- endif -%}
