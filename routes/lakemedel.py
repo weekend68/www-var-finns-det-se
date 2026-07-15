@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Blueprint, redirect, render_template, request
 
 import checker
+import faq as faq_builder
 import fass
 import shortage
 from config import HISTORY_RELIABLE_SINCE, MIN_CONSECUTIVE_POLLS, SITE_URL, SUBSCRIPTION_TTL_DAYS
@@ -282,12 +283,56 @@ def lakemedel(id_slug):
         else:
             offer["availability"] = "https://schema.org/OutOfStock"
 
+    description = f"Lagerstatus och bevakning för {med['name']} på svenska apotek."
+
     jsonld = {
         "@context": "https://schema.org",
         "@type": "Product",
         "name": med["name"],
+        "sku": npl_pack_id,
+        "description": description,
         "offers": offer,
     }
+
+    # Built once here and handed to the template for BOTH the visible <dl>
+    # FAQ HTML and the FAQPage JSON-LD block -- never two separate sources
+    # for the same content (see faq.py's module docstring).
+    faq_list = faq_builder.build_medication_faq(med, pharmacies, in_stock_now, shortage_info, history, siblings)
+    jsonld_faq = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": item["question"],
+                "acceptedAnswer": {"@type": "Answer", "text": item["answer"]},
+            }
+            for item in faq_list
+        ],
+    }
+
+    # Hem -> Kategori (if this package belongs to one) -> Läkemedel.
+    breadcrumb_items = [{"@type": "ListItem", "position": 1, "name": "Hem", "item": SITE_URL or "/"}]
+    if category:
+        breadcrumb_items.append({
+            "@type": "ListItem",
+            "position": len(breadcrumb_items) + 1,
+            "name": category["atc_term"] or category["atc_code"],
+            "item": category["url"],
+        })
+    breadcrumb_items.append({
+        "@type": "ListItem",
+        "position": len(breadcrumb_items) + 1,
+        "name": med["name"],
+        "item": canonical_url,
+    })
+    jsonld_breadcrumb = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": breadcrumb_items,
+    }
+
+    og_image = f"{SITE_URL}/og-image.png" if SITE_URL else ""
 
     return render_template(
         "lakemedel.html",
@@ -310,6 +355,10 @@ def lakemedel(id_slug):
         indexable=indexable,
         show_partner_guide=npl_pack_id in checker.MENOPAUSE_RELATED_IDS,
         canonical_url=canonical_url,
+        og_image=og_image,
         jsonld=jsonld,
+        faq_list=faq_list,
+        jsonld_faq=jsonld_faq,
+        jsonld_breadcrumb=jsonld_breadcrumb,
         ttl_days=SUBSCRIPTION_TTL_DAYS,
     )

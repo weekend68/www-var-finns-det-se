@@ -247,27 +247,42 @@ def get_token(db, token, token_type):
 
 
 def is_medication_indexable(db, npl_pack_id):
-    """A medication is only worth indexing (sitemap + index,follow) once it has
-    at least one confirmed subscription, ever — not merely having been searched.
-    Keeps Google's/bots' crawlable surface tied to proven demand instead of
-    growing unboundedly with every curious one-off search."""
+    """A medication is worth indexing (sitemap + index,follow) once it has
+    EITHER at least one confirmed subscription ever, OR real catalogue data
+    from Läkemedelsverket (a row in national_shortages) -- whichever comes
+    first. The subscription condition alone left every one of the ~2500
+    catalogue-only medications (see national_shortages.py) permanently
+    unindexable, since nobody had ever subscribed to them; being in the
+    national shortage catalogue is itself proof of real, verifiable content
+    worth indexing, independent of subscriber demand."""
     row = db.execute(
-        "SELECT 1 FROM subscriptions s JOIN subscribers sub ON s.subscriber_id = sub.id "
-        "WHERE s.npl_pack_id = ? AND sub.confirmed_at IS NOT NULL LIMIT 1",
-        [npl_pack_id],
+        "SELECT 1 WHERE EXISTS ("
+        "  SELECT 1 FROM subscriptions s JOIN subscribers sub ON s.subscriber_id = sub.id "
+        "  WHERE s.npl_pack_id = ? AND sub.confirmed_at IS NOT NULL"
+        ") OR EXISTS ("
+        "  SELECT 1 FROM national_shortages ns WHERE ns.npl_pack_id = ?"
+        ")",
+        [npl_pack_id, npl_pack_id],
     ).fetchone()
     return row is not None
 
 
 def list_medications_for_sitemap(db):
     """Medications qualifying for sitemap.xml — real name (not a placeholder
-    row) and at least one confirmed subscription ever."""
+    row) and either at least one confirmed subscription ever, or a row in
+    national_shortages (Läkemedelsverket catalogue data). Same extended
+    condition as is_medication_indexable() above -- keep the two in sync."""
     return db.execute(
         "SELECT m.npl_pack_id, m.name, m.strength, m.form FROM medications m "
         "WHERE m.name != m.npl_pack_id "
-        "AND EXISTS ("
-        "  SELECT 1 FROM subscriptions s JOIN subscribers sub ON s.subscriber_id = sub.id "
-        "  WHERE s.npl_pack_id = m.npl_pack_id AND sub.confirmed_at IS NOT NULL"
+        "AND ("
+        "  EXISTS ("
+        "    SELECT 1 FROM subscriptions s JOIN subscribers sub ON s.subscriber_id = sub.id "
+        "    WHERE s.npl_pack_id = m.npl_pack_id AND sub.confirmed_at IS NOT NULL"
+        "  )"
+        "  OR EXISTS ("
+        "    SELECT 1 FROM national_shortages ns WHERE ns.npl_pack_id = m.npl_pack_id"
+        "  )"
         ")"
     ).fetchall()
 

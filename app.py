@@ -5,6 +5,7 @@ import threading
 from flask import Flask, render_template, Response
 
 import checker
+import faq as faq_builder
 from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
 from db import get_db, init_db, list_medications_for_sitemap
 from national_shortages import get_shortage_categories
@@ -38,6 +39,23 @@ def _template_vars():
         p["lakemedel_url"] = f"/lakemedel/{p['npl_pack_id']}"
     snap = {"status": status, "last_check": last_check, "products": products}
 
+    # Small, static homepage FAQ -- no per-item data needed (see
+    # faq.py's build_homepage_faq()). Built once here and reused for both
+    # the visible FAQ section and the FAQPage JSON-LD block.
+    faq_list = faq_builder.build_homepage_faq()
+    jsonld_faq = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": item["question"],
+                "acceptedAnswer": {"@type": "Answer", "text": item["answer"]},
+            }
+            for item in faq_list
+        ],
+    }
+
     return dict(
         canonical=SITE_URL,
         og_image=og_image,
@@ -49,6 +67,8 @@ def _template_vars():
         staleness=checker.staleness_tier(last_check),
         show_partner_guide=True,
         snap=snap,
+        faq_list=faq_list,
+        jsonld_faq=jsonld_faq,
     )
 
 

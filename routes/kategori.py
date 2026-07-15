@@ -12,6 +12,7 @@ import re
 
 from flask import Blueprint, redirect, render_template
 
+import faq as faq_builder
 from category_editorial import get_editorial
 from config import SITE_URL
 from db import get_db, get_medication
@@ -93,6 +94,40 @@ def kategori(id_slug):
     # heading, no intro paragraph.
     title = editorial.get("title") or cat["atc_term"] or atc_code
     intro = editorial.get("intro")
+    canonical_url = category_url(SITE_URL, atc_code, cat["atc_term"])
+
+    # Overwrite cat["products"] (raw national_shortages feed rows, one per
+    # package, product_name verbatim from Läkemedelsverket) with the
+    # display-ready `products` list built above (real medications.name
+    # lookups, one link per package) -- so build_category_faq() below never
+    # shows a catalogue-only name the visible product list itself doesn't use.
+    cat["products"] = products
+    faq_list = faq_builder.build_category_faq(cat)
+    jsonld_faq = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": item["question"],
+                "acceptedAnswer": {"@type": "Answer", "text": item["answer"]},
+            }
+            for item in faq_list
+        ],
+    }
+
+    # Hem -> Kategorier -> [category name].
+    jsonld_breadcrumb = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Hem", "item": SITE_URL or "/"},
+            {"@type": "ListItem", "position": 2, "name": "Kategorier", "item": f"{SITE_URL}/kategorier"},
+            {"@type": "ListItem", "position": 3, "name": title, "item": canonical_url},
+        ],
+    }
+
+    og_image = f"{SITE_URL}/og-image.png" if SITE_URL else ""
 
     return render_template(
         "kategori.html",
@@ -100,5 +135,9 @@ def kategori(id_slug):
         products=products,
         title=title,
         intro=intro,
-        canonical_url=category_url(SITE_URL, atc_code, cat["atc_term"]),
+        canonical_url=canonical_url,
+        og_image=og_image,
+        faq_list=faq_list,
+        jsonld_faq=jsonld_faq,
+        jsonld_breadcrumb=jsonld_breadcrumb,
     )

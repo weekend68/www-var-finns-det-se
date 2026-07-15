@@ -13,10 +13,19 @@
   <meta property="og:title"       content="{{ med.name }} — lagerstatus">
   <meta property="og:description" content="Är {{ med.name }} i lager på apotek just nu? Se aktuell lagerstatus och bevaka gratis.">
   <meta property="og:url"         content="{{ canonical_url }}">
+  {% if og_image %}
+  <meta property="og:image"       content="{{ og_image }}">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  {% endif %}
   <meta property="og:locale"      content="sv_SE">
-  <meta name="twitter:card"        content="summary">
+  <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="{{ med.name }} — lagerstatus | {{ site_name }}">
+  <meta name="twitter:description" content="Är {{ med.name }} i lager på apotek just nu? Se aktuell lagerstatus och bevaka gratis.">
+  {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <script type="application/ld+json">{{ jsonld | tojson }}</script>
+  <script type="application/ld+json">{{ jsonld_faq | tojson }}</script>
+  <script type="application/ld+json">{{ jsonld_breadcrumb | tojson }}</script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
@@ -339,12 +348,10 @@
     <div class="card">
       <h2 class="section-heading">Vanliga frågor</h2>
       <dl class="faq">
-        <dt>Hur ofta uppdateras lagerstatusen för {{ med.name }}?</dt>
-        <dd>Vi kontrollerar bevakade läkemedel regelbundet mot Fass.se. Ovanpå det görs en färsk koll när den här sidan besöks om läkemedlet inte redan bevakas aktivt av någon.</dd>
-        <dt>Vad gör jag om {{ med.name }} är slut?</dt>
-        <dd>Klicka på "Bevaka det här läkemedlet" ovan så får du ett e-postmeddelande så fort det finns i lager igen på något apotek i Sverige.</dd>
-        <dt>Kan jag lita på att det verkligen finns när jag åker till apoteket?</dt>
-        <dd>Lagret kan förändras snabbt — ring gärna apoteket innan du åker för att bekräfta.</dd>
+        {% for item in faq_list %}
+        <dt>{{ item.question }}</dt>
+        <dd>{{ item.answer }}</dd>
+        {% endfor %}
       </dl>
     </div>
   </main>

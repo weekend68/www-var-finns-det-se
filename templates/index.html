@@ -23,6 +23,7 @@
   <meta name="twitter:title"       content="{{ site_name }} — hitta mitt läkemedel">
   <meta name="twitter:description" content="{{ desc }}">
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
+  <script type="application/ld+json">{{ jsonld_faq | tojson }}</script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
@@ -90,6 +91,8 @@
     .partner-guide p + p { margin-top: 0.5rem; }
     .partner-guide strong.brand { color: #1bb890; font-weight: 600; }
     .partner-guide .disclosure { font-size: 0.8rem; color: #888; margin-top: 0.4rem; }
+    .faq dt { font-weight: 600; font-size: 0.9rem; color: #0D1B2A; margin-top: 0.75rem; }
+    .faq dd { font-size: 0.85rem; color: #555; margin-top: 0.2rem; line-height: 1.5; }
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 0.5rem;
             overflow-x: auto; display: block; }
     th { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 2px solid #eee;
@@ -313,6 +316,16 @@
       <p class="disclosure">(Partnerguiden.se drivs av samma team som {{ site_name }}.)</p>
     </a>
     {% endif %}
+
+    <div class="card">
+      <h2 class="section-heading">Vanliga frågor</h2>
+      <dl class="faq">
+        {% for item in faq_list %}
+        <dt>{{ item.question }}</dt>
+        <dd>{{ item.answer }}</dd>
+        {% endfor %}
+      </dl>
+    </div>
   </main>
 
   <script>
