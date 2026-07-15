@@ -24,102 +24,54 @@
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <script type="application/ld+json">{{ jsonld_faq | tojson }}</script>
   <script type="application/ld+json">{{ jsonld_breadcrumb | tojson }}</script>
+  {% include "_design.html" %}
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
-           min-height: 100vh; display: flex; flex-direction: column; }
-    .hero {
-      background: #0D1B2A;
-      background-image: radial-gradient(#1E3A52 1px, transparent 1px);
-      background-size: 40px 40px;
-      border-left: 5px solid #22D3A5;
-      padding: 2rem 1.5rem 1.75rem;
+    .cat-main { max-width: 680px; margin: 0 auto; padding: 1.4rem 1.2rem 2.4rem; }
+    .prod-row {
+      display: block; padding: 0.75rem 0.15rem; border-bottom: 1px solid var(--line);
+      color: var(--ink); font-weight: 600; font-size: 0.92rem; text-decoration: none;
+      font-family: -apple-system, sans-serif;
     }
-    .hero-inner { max-width: 720px; }
-    .hero-top { display: flex; align-items: center; justify-content: space-between;
-                flex-wrap: wrap; gap: 0.4rem 1.5rem; margin-bottom: 1rem; }
-    .hero-brand { display: flex; align-items: center; gap: 0.6rem; }
-    .hero-name { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
-    .hero-name-main { color: #EEF4F8; }
-    .hero-name-tld  { color: #22D3A5; }
-    .hero-crumb { color: #8CAFC7; font-size: 0.8rem; margin-bottom: 0.4rem; }
-    .hero-crumb a { color: #22D3A5; text-decoration: none; }
-    .hero-crumb a:hover { text-decoration: underline; }
-    main { flex: 1; padding: 1.5rem; }
-    .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,.08); max-width: 720px; }
-    h1 { font-size: 1.3rem; color: #0D1B2A; margin-bottom: 0.3rem; max-width: 720px; }
-    .subtitle { font-size: 0.9rem; color: #777; margin-bottom: 1rem; max-width: 720px; }
-    .intro { font-size: 0.9rem; color: #444; line-height: 1.65; margin-bottom: 0.5rem; }
-    .category-link { display: inline-block; font-size: 0.8rem; color: #3D6480;
-                      text-decoration: none; margin-top: 0.4rem; }
-    .category-link:hover { color: #1bb890; text-decoration: underline; }
-    .section-heading { font-size: 0.8rem; font-weight: 600; color: #888; text-transform: uppercase;
-                        letter-spacing: 0.06em; margin-bottom: 0.6rem; }
-    .product-list { list-style: none; }
-    .product-row { border-bottom: 1px solid #f0f0f0; }
-    .product-row:last-child { border-bottom: none; }
-    .product-row a { display: block; padding: 0.6rem 0.25rem; color: #0D1B2A; text-decoration: none;
-                      font-weight: 600; font-size: 0.95rem; }
-    .product-row a:hover { color: #1bb890; text-decoration: underline; }
-    .faq dt { font-weight: 600; font-size: 0.9rem; color: #0D1B2A; margin-top: 0.75rem; }
-    .faq dd { font-size: 0.85rem; color: #555; margin-top: 0.2rem; line-height: 1.5; }
-    footer { max-width: 720px; margin: 1rem 1.5rem 1.5rem; padding-top: 1rem;
-             font-size: 0.75rem; color: #999; line-height: 1.6; border-top: 1px solid #e0e0e0; }
-    footer a { color: #999; }
+    .prod-row:last-child { border-bottom: none; }
+    .prod-row:hover, .prod-row:focus-visible { color: var(--cta); text-decoration: underline; }
+    .prod-row:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
   </style>
   {% include "_umami.html" %}
 </head>
 <body>
-  <header class="hero">
-    <div class="hero-inner">
-      <div class="hero-top">
-        <div class="hero-brand">
-          <svg width="36" height="16" viewBox="0 0 36 16" aria-hidden="true" style="flex-shrink:0">
-            <rect x="0" y="0" width="36" height="16" rx="8" fill="none" stroke="#22D3A5" stroke-width="1.5"/>
-            <line x1="18" y1="0" x2="18" y2="16" stroke="#22D3A5" stroke-width="1.5"/>
-            <clipPath id="pill-lh"><rect x="0" y="0" width="18" height="16"/></clipPath>
-            <rect x="0" y="0" width="36" height="16" rx="8" fill="#22D3A5" clip-path="url(#pill-lh)"/>
-          </svg>
-          <a href="/" class="hero-name" style="text-decoration:none">
-            <span class="hero-name-main">{{ name_base }}</span><span class="hero-name-tld">{{ name_tld }}</span>
-          </a>
-        </div>
-        {% include "_nav.html" %}
-      </div>
-      <p class="hero-crumb"><a href="/kategorier">← Alla läkemedelsgrupper</a></p>
-    </div>
-  </header>
+  {% set hero_breadcrumb_url = "/kategorier" %}
+  {% set hero_breadcrumb_text = "Alla läkemedelsgrupper" %}
+  {% include "_header.html" %}
 
   <main>
-    <div class="card">
-      <h1>{{ title }}</h1>
-      <p class="subtitle">{{ cat.product_count }} produkter i den här gruppen har en registrerad bristsituation just nu.</p>
-      {% if intro %}
-      <p class="intro">{{ intro }}</p>
-      {% endif %}
-      {% if cat.atc_term %}
-      <a class="category-link" href="https://sv.wikipedia.org/wiki/{{ cat.atc_term | urlencode }}" target="_blank" rel="noopener">Läs mer om {{ cat.atc_term }} på Wikipedia →</a>
-      {% endif %}
-    </div>
+    <div class="cat-main">
+      <div class="card">
+        <h1 class="med-h1">{{ title }}</h1>
+        <p class="med-subtitle">{{ cat.product_count }} produkter i den här gruppen har en registrerad bristsituation just nu.</p>
+        {% if intro %}
+        <p class="med-p">{{ intro }}</p>
+        {% endif %}
+        {% if cat.atc_term %}
+        <a class="cat-wiki-link" href="https://sv.wikipedia.org/wiki/{{ cat.atc_term | urlencode }}" target="_blank" rel="noopener">Läs mer om {{ cat.atc_term }} på Wikipedia &rarr;</a>
+        {% endif %}
+      </div>
 
-    <div class="card">
-      <h2 class="section-heading">Produkter i den här gruppen</h2>
-      <ul class="product-list">
+      <div class="card">
+        <div class="med-label">Produkter i den här gruppen</div>
         {% for p in products %}
-        <li class="product-row"><a href="{{ p.url }}">{{ p.name }}</a></li>
+        <a class="prod-row" href="{{ p.url }}">{{ p.name }}</a>
         {% endfor %}
-      </ul>
-    </div>
+      </div>
 
-    <div class="card">
-      <h2 class="section-heading">Vanliga frågor</h2>
-      <dl class="faq">
-        {% for item in faq_list %}
-        <dt>{{ item.question }}</dt>
-        <dd>{{ item.answer }}</dd>
-        {% endfor %}
-      </dl>
+      <div class="card">
+        <div class="med-label">Vanliga frågor</div>
+        <dl class="faq">
+          {% for item in faq_list %}
+          <dt>{{ item.question }}</dt>
+          <dd>{{ item.answer }}</dd>
+          {% endfor %}
+        </dl>
+      </div>
     </div>
   </main>
 

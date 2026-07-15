@@ -15,85 +15,45 @@
   <meta name="twitter:card"        content="summary">
   <meta name="twitter:title"       content="Bristsituationer per läkemedelsgrupp">
   <meta name="twitter:description" content="Läkemedelsverkets nationella bristsituationer grupperade per substans/läkemedelsgrupp.">
+  {% include "_design.html" %}
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
-           min-height: 100vh; display: flex; flex-direction: column; }
-    .hero {
-      background: #0D1B2A;
-      background-image: radial-gradient(#1E3A52 1px, transparent 1px);
-      background-size: 40px 40px;
-      border-left: 5px solid #22D3A5;
-      padding: 2rem 1.5rem 1.75rem;
+    .cat-main { max-width: 720px; margin: 0 auto; padding: 1.4rem 1.2rem 2.4rem; }
+    .cat-index-grid { display: grid; grid-template-columns: 1fr; }
+    @media (min-width: 700px) { .cat-index-grid { grid-template-columns: repeat(2, 1fr); column-gap: 2.2rem; } }
+    .cat-row {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+      padding: 0.8rem 0.15rem; border-bottom: 1px solid var(--line);
+      text-decoration: none; color: inherit;
     }
-    .hero-inner { max-width: 720px; }
-    .hero-top { display: flex; align-items: center; justify-content: space-between;
-                flex-wrap: wrap; gap: 0.4rem 1.5rem; margin-bottom: 1rem; }
-    .hero-brand { display: flex; align-items: center; gap: 0.6rem; }
-    .hero-name { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
-    .hero-name-main { color: #EEF4F8; }
-    .hero-name-tld  { color: #22D3A5; }
-    .hero-tagline { color: #8CAFC7; font-size: 0.8rem; letter-spacing: 0.06em;
-                    text-transform: uppercase; margin-bottom: 0.9rem; }
-    .hero-desc { color: #A8C8DC; font-size: 0.875rem; line-height: 1.65; }
-    main { flex: 1; padding: 1.5rem; }
-    .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,.08); max-width: 720px; }
-    h1 { font-size: 1.3rem; color: #0D1B2A; margin-bottom: 0.3rem; max-width: 720px; }
-    .subtitle { font-size: 0.9rem; color: #777; margin-bottom: 1rem; max-width: 720px; }
-    .section-heading { font-size: 0.8rem; font-weight: 600; color: #888; text-transform: uppercase;
-                        letter-spacing: 0.06em; margin-bottom: 0.6rem; }
-    .cat-list { list-style: none; }
-    .cat-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-               padding: 0.6rem 0.25rem; border-bottom: 1px solid #f0f0f0; }
     .cat-row:last-child { border-bottom: none; }
-    .cat-row a { color: #0D1B2A; text-decoration: none; font-weight: 600; font-size: 0.95rem; }
-    .cat-row a:hover { color: #1bb890; text-decoration: underline; }
-    .cat-count { font-size: 0.8rem; color: #888; white-space: nowrap; }
-    footer { max-width: 720px; margin: 1rem 1.5rem 1.5rem; padding-top: 1rem;
-             font-size: 0.75rem; color: #999; line-height: 1.6; border-top: 1px solid #e0e0e0; }
-    footer a { color: #999; }
+    .cat-row:focus-visible { outline: 2px solid var(--cta); outline-offset: 2px; }
+    .cat-row-name { font-family: -apple-system, sans-serif; font-weight: 600; font-size: 0.94rem; color: var(--ink); }
+    .cat-row:hover .cat-row-name, .cat-row:focus-visible .cat-row-name { color: var(--cta); text-decoration: underline; }
+    .cat-row-count { font-family: ui-monospace, "SF Mono", "Cascadia Code", monospace; font-size: 0.76rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
   </style>
   {% include "_umami.html" %}
 </head>
 <body>
-  <header class="hero">
-    <div class="hero-inner">
-      <div class="hero-top">
-        <div class="hero-brand">
-          <svg width="36" height="16" viewBox="0 0 36 16" aria-hidden="true" style="flex-shrink:0">
-            <rect x="0" y="0" width="36" height="16" rx="8" fill="none" stroke="#22D3A5" stroke-width="1.5"/>
-            <line x1="18" y1="0" x2="18" y2="16" stroke="#22D3A5" stroke-width="1.5"/>
-            <clipPath id="pill-lh"><rect x="0" y="0" width="18" height="16"/></clipPath>
-            <rect x="0" y="0" width="36" height="16" rx="8" fill="#22D3A5" clip-path="url(#pill-lh)"/>
-          </svg>
-          <a href="/" class="hero-name" style="text-decoration:none">
-            <span class="hero-name-main">{{ name_base }}</span><span class="hero-name-tld">{{ name_tld }}</span>
-          </a>
-        </div>
-        {% include "_nav.html" %}
-      </div>
-      <p class="hero-tagline">Bristsituationer per läkemedelsgrupp</p>
-      <p class="hero-desc">
-        Läkemedelsverket registrerar just nu bristsituationer för ett stort antal läkemedel.
-        Här är de grupperade efter substans, så du kan se vilka andra produkter som finns
-        inom samma grupp om just din inte finns i lager.
-      </p>
-    </div>
-  </header>
+  {% set nav_active = 'kategorier' %}
+  {% set hero_desc = "Läkemedelsverket registrerar just nu bristsituationer för ett stort antal läkemedel. Här är de grupperade efter substans, så du kan se vilka andra produkter som finns inom samma grupp om just din inte finns i lager." %}
+  {% include "_header.html" %}
 
   <main>
-    <div class="card">
-      <h1>Alla läkemedelsgrupper med kända bristsituationer</h1>
-      <p class="subtitle">{{ categories | length }} grupper har minst tre olika produkter i brist just nu, störst först.</p>
-      <ul class="cat-list">
-        {% for cat in categories %}
-        <li class="cat-row">
-          <a href="{{ cat.url }}">{{ cat.atc_term or cat.atc_code }}</a>
-          <span class="cat-count">{{ cat.product_count }} produkter</span>
-        </li>
-        {% endfor %}
-      </ul>
+    <div class="cat-main">
+      <div class="card">
+        <h1 class="med-h1">Alla läkemedelsgrupper med kända bristsituationer</h1>
+        <p class="med-subtitle">{{ categories | length }} grupper har minst tre olika produkter i brist just nu, störst först.</p>
+      </div>
+      <div class="card">
+        <div class="cat-index-grid">
+          {% for cat in categories %}
+          <a class="cat-row" href="{{ cat.url }}">
+            <span class="cat-row-name">{{ cat.atc_term or cat.atc_code }}</span>
+            <span class="cat-row-count">{{ cat.product_count }} produkter</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
     </div>
   </main>
 
