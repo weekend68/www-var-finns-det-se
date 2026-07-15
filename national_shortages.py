@@ -32,7 +32,7 @@ NS = "http://eservices.lakemedelsverket.se/opendata/medicineshortage/v3/"
 # file that only changes once a day at the source, so this must NOT be
 # re-fetched every checker.py poll cycle (as often as every few minutes in
 # production). See refresh_national_shortages_if_due().
-REFRESH_INTERVAL_HOURS = 24
+REFRESH_INTERVAL_HOURS = 0  # TEMPORARY -- forcing immediate re-run on beta to clean up earlier bad form values, revert to 24 right after
 
 # Category threshold: an ATC code needs at least this many DISTINCT PRODUCTS
 # (not packages) currently short to be worth a category page. Verified
