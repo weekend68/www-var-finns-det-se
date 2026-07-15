@@ -132,13 +132,21 @@ def _stock_history(db, npl_pack_id, limit=200):
 def _sibling_packages(db, med):
     """Other packages/strengths of the same medication. medications.npl_id is
     never populated by any current code path, so name-prefix matching on the
-    trade name is the only DB-only signal available today."""
+    trade name is the only DB-only signal available today.
+
+    This pulls in both curated checker.PRODUCTS rows and national-shortage-
+    catalogue-backfilled rows, which frequently use different naming
+    conventions for what's sometimes the exact same strength and sometimes a
+    genuinely different package (see national_shortages.py's
+    _backfill_medications docstring) -- package_description is included so
+    the template can show it as a distinguishing subtext, same treatment as
+    the main subtitle/search results."""
     base = (med["name"] or "").strip().split(" ")[0]
     if len(base) < 3:
         return []
     escaped_base = escape_like(base)
     rows = db.execute(
-        "SELECT npl_pack_id, name, strength, form FROM medications "
+        "SELECT npl_pack_id, name, strength, form, package_description FROM medications "
         "WHERE name LIKE ? ESCAPE '\\' AND npl_pack_id != ? AND name != npl_pack_id "
         "ORDER BY name LIMIT 10",
         [f"{escaped_base}%", med["npl_pack_id"]],
@@ -147,6 +155,7 @@ def _sibling_packages(db, med):
         {
             "npl_pack_id": r["npl_pack_id"],
             "name": r["name"],
+            "package_description": r["package_description"],
             "slug": slugify_medication(r["name"], r["strength"], r["form"]),
         }
         for r in rows

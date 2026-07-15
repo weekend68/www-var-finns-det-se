@@ -117,24 +117,26 @@ def _parse(xml_source):
 
 def _backfill_medications(db, rows):
     """Insert a real medications row for any npl_pack_id in `rows` that's
-    missing entirely, or update it (name + form) if it exists only as a
-    name==npl_pack_id placeholder, or if an earlier run of this function
-    already set the name but left form unset (see below). We already have
-    the real ProductName/PackageDescription from this feed, so this
-    deliberately avoids ever needing a live fass.lookup_name() call for
-    catalogue products.
+    missing entirely, or update it (name + package_description) if it
+    exists only as a name==npl_pack_id placeholder, or if an earlier run of
+    this function already set the name but left package_description unset
+    (see below). We already have the real ProductName/PackageDescription
+    from this feed, so this deliberately avoids ever needing a live
+    fass.lookup_name() call for catalogue products.
 
-    form is set from package_description, NOT derived from product_name --
-    a single product commonly has multiple packages short at the same time
-    sharing the exact same product_name (e.g. "Estradot 37,5 mikrogram/24
-    timmar Depotplåster" covers both an 8-pack and a 24-pack, each its own
-    npl_pack_id) -- package_description ("Påse, 8 x 1 depotplåster" vs
-    "Påse, 24 x 1 depotplåster") is what actually distinguishes them in
-    search results and lets medications.form render consistently with
-    curated checker.PRODUCTS rows instead of one undifferentiated blob.
-    Curated rows always have form populated by seed_products(), so the
-    "form still unset" re-check below only ever matches catalogue-only
-    entries, never touches curated data.
+    Deliberately does NOT set `form` -- that column means "dosage form"
+    (e.g. "depotplåster") for curated checker.PRODUCTS rows, populated
+    explicitly by seed_products(). There's no reliable way to extract just
+    the dosage form from arbitrary freeform ProductName strings across
+    ~2000 different real medications without fragile per-product parsing,
+    so this leaves `form` unset for catalogue rows rather than guess wrong.
+    package_description ("Påse, 8 x 1 depotplåster") is a separate,
+    genuinely different piece of information (packaging/pack-size, not
+    dosage form) -- a single product commonly has multiple packages short
+    at once sharing the exact same product_name (e.g. Estradot 37,5
+    mikrogram/24 timmar: an 8-pack and a 24-pack, each its own
+    npl_pack_id), and this is what actually distinguishes them; see its
+    own display treatment in routes/lakemedel.py and fass.py's search.
 
     Returns the number of rows backfilled."""
     pack_ids = [r["npl_pack_id"] for r in rows]
@@ -143,24 +145,31 @@ def _backfill_medications(db, rows):
         chunk = pack_ids[i:i + _SQL_VAR_CHUNK]
         placeholders = ",".join("?" for _ in chunk)
         for row in db.execute(
-            f"SELECT npl_pack_id, name, form FROM medications WHERE npl_pack_id IN ({placeholders})", chunk
+            f"SELECT npl_pack_id, name, package_description FROM medications WHERE npl_pack_id IN ({placeholders})", chunk
         ):
-            existing[row["npl_pack_id"]] = (row["name"], row["form"])
+            existing[row["npl_pack_id"]] = (row["name"], row["package_description"])
 
     to_backfill = []
     for r in rows:
         if not r["product_name"]:
             continue
-        name, form = existing.get(r["npl_pack_id"], (r["npl_pack_id"], None))
+        name, package_description = existing.get(r["npl_pack_id"], (r["npl_pack_id"], None))
         is_placeholder = name == r["npl_pack_id"]
-        is_our_earlier_backfill_missing_form = name == r["product_name"] and not form
-        if is_placeholder or is_our_earlier_backfill_missing_form:
+        is_our_earlier_backfill_missing_package = name == r["product_name"] and not package_description
+        if is_placeholder or is_our_earlier_backfill_missing_package:
             to_backfill.append(r)
 
     if to_backfill:
         db.executemany(
-            "INSERT INTO medications (npl_pack_id, name, form) VALUES (?, ?, ?) "
-            "ON CONFLICT(npl_pack_id) DO UPDATE SET name=excluded.name, form=excluded.form",
+            "INSERT INTO medications (npl_pack_id, name, package_description) VALUES (?, ?, ?) "
+            "ON CONFLICT(npl_pack_id) DO UPDATE SET name=excluded.name, package_description=excluded.package_description, "
+            # Clears out `form` for these rows -- only ever reached for
+            # catalogue-only entries (curated rows never match the
+            # is_placeholder/is_our_earlier_backfill_missing_package check
+            # above), so this also self-heals a previous version of this
+            # function that mistakenly wrote package_description-like text
+            # into `form` instead of this dedicated column.
+            "form=NULL",
             [(r["npl_pack_id"], r["product_name"], r["package_description"]) for r in to_backfill],
         )
     return len(to_backfill)

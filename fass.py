@@ -137,18 +137,26 @@ def _fass_search(q):
 
 
 def _db_search(q):
-    """Search seeded medications in local DB (case-insensitive LIKE)."""
+    """Search seeded medications in local DB (case-insensitive LIKE).
+
+    "form" in the returned dict falls back to package_description when form
+    itself is unset -- national-shortage-catalogue-backfilled rows (see
+    national_shortages.py) never have form populated (no reliable way to
+    parse just the dosage form out of arbitrary product names), but commonly
+    have several packages sharing the exact same name, so package_description
+    is what actually distinguishes them in the search dropdown instead of
+    showing indistinguishable duplicates."""
     try:
         from db import escape_like, get_db
         escaped_q = escape_like(q)
         with get_db() as db:
             rows = db.execute(
-                "SELECT npl_pack_id, name, strength, form FROM medications "
+                "SELECT npl_pack_id, name, strength, form, package_description FROM medications "
                 "WHERE name LIKE ? ESCAPE '\\' ORDER BY name LIMIT 10",
                 [f"%{escaped_q}%"],
             ).fetchall()
         return [
-            {"npl_id": r["npl_pack_id"], "name": r["name"], "form": r["form"] or ""}
+            {"npl_id": r["npl_pack_id"], "name": r["name"], "form": r["form"] or r["package_description"] or ""}
             for r in rows
         ]
     except Exception:

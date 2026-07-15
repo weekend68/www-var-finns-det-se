@@ -36,7 +36,7 @@ def api_packages():
                     "npl_pack_id": med["npl_pack_id"],
                     "name": med["name"],
                     "strength": med["strength"] or "",
-                    "form": med["form"] or "",
+                    "form": med["form"] or med["package_description"] or "",
                 }])
         except Exception:
             pass

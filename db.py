@@ -10,11 +10,19 @@ DB_PATH = os.getenv("DB_PATH", "/data/medicinstatus.db")
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS medications (
-    npl_pack_id TEXT PRIMARY KEY,
-    name        TEXT NOT NULL,
-    strength    TEXT,
-    form        TEXT,
-    created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    npl_pack_id         TEXT PRIMARY KEY,
+    name                TEXT NOT NULL,
+    strength            TEXT,
+    form                TEXT,
+    -- Container/pack-size description (e.g. "Påse, 8 x 1 depotplåster"),
+    -- distinct from `form` (dosage form, e.g. "depotplåster"). Only ever
+    -- populated for national-shortage-catalogue-backfilled rows (see
+    -- national_shortages.py) -- a single product commonly has several
+    -- packages short at once sharing the exact same name/form, and this is
+    -- what actually distinguishes them. Never guessed/parsed for curated
+    -- checker.PRODUCTS rows, which don't need it (one package per entry).
+    package_description TEXT,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS subscribers (
@@ -106,10 +114,23 @@ CREATE TABLE IF NOT EXISTS national_shortages_meta (
 );
 """
 
+def _migrate_add_column(con, table, column, coltype):
+    """CREATE TABLE IF NOT EXISTS only helps brand-new databases -- an
+    already-existing production/beta database needs an explicit ALTER TABLE
+    for a column added after the table was first created. Guarded by
+    PRAGMA table_info rather than relying on SQLite's own
+    "ADD COLUMN IF NOT EXISTS" (only in newer SQLite versions) for
+    portability across whatever SQLite build the deploy environment has."""
+    cols = {row[1] for row in con.execute(f"PRAGMA table_info({table})")}
+    if column not in cols:
+        con.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}")
+
+
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     con = sqlite3.connect(DB_PATH)
     con.executescript(_SCHEMA)
+    _migrate_add_column(con, "medications", "package_description", "TEXT")
     con.commit()
     con.close()
 
@@ -196,7 +217,7 @@ def escape_like(s):
 
 def get_medication(db, npl_pack_id):
     return db.execute(
-        "SELECT npl_pack_id, name, strength, form FROM medications WHERE npl_pack_id=?",
+        "SELECT npl_pack_id, name, strength, form, package_description FROM medications WHERE npl_pack_id=?",
         [npl_pack_id],
     ).fetchone()
 

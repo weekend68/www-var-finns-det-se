@@ -146,6 +146,9 @@
       {% if med.strength or med.form %}
       <p class="subtitle">{{ [med.strength, med.form] | select | join(' · ') }}</p>
       {% endif %}
+      {% if med.package_description %}
+      <p class="checked-at">Förpackning: {{ med.package_description }}</p>
+      {% endif %}
 
       {% set show_shortage_note = shortage_info and not shortage_info.actual_end %}
       {% if stock_unknown %}
@@ -321,7 +324,7 @@
       <h2 class="section-heading">Andra styrkor/förpackningar</h2>
       <div class="siblings">
         {% for s in siblings %}
-        <a href="/lakemedel/{{ s.npl_pack_id }}-{{ s.slug }}">{{ s.name }}</a>
+        <a href="/lakemedel/{{ s.npl_pack_id }}-{{ s.slug }}">{{ s.name }}{% if s.package_description %} <span style="color:#888;font-size:0.85em">({{ s.package_description }})</span>{% endif %}</a>
         {% endfor %}
       </div>
     </div>
