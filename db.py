@@ -25,18 +25,20 @@ CREATE TABLE IF NOT EXISTS medications (
     -- Product-level NPL id (distinct id-space from npl_pack_id, which is the
     -- PACKAGE-level id) -- needed to link out to FASS Patient
     -- (https://www.fass.se/LIF/product?userType=2&nplId=<npl_id>), which
-    -- only accepts product-level ids. Populated for curated checker.PRODUCTS
-    -- rows via seed_products() and for catalogue rows via
-    -- national_shortages.py's _backfill_medications() (the feed already
-    -- carries npl_id per row). May be NULL for medications resolved only via
-    -- fass.lookup_name()'s package-level fallback in routes/lakemedel.py.
+    -- only accepts product-level ids. Populated via national_shortages.py's
+    -- _backfill_medications() (the feed already carries npl_id per row) --
+    -- including for curated checker.PRODUCTS rows, which get the exact same
+    -- backfill treatment as any other catalogue product (seed_products()
+    -- only ever inserts a bare name==npl_pack_id placeholder). May be NULL
+    -- for medications resolved only via fass.lookup_name()'s package-level
+    -- fallback in routes/lakemedel.py.
     npl_id              TEXT,
     -- Marketing authorisation holder (Läkemedelsverket's
     -- MarketAuthorisationHolderName field) -- the actual manufacturer/brand
-    -- owner, e.g. "Sandoz A/S". Populated for curated checker.PRODUCTS rows
-    -- via seed_products() and for catalogue rows via national_shortages.py's
-    -- _backfill_medications() (the feed carries this per product). May be
-    -- NULL for medications resolved only via fass.lookup_name()'s
+    -- owner, e.g. "Sandoz A/S". Populated via national_shortages.py's
+    -- _backfill_medications() (the feed carries this per product) --
+    -- including for curated checker.PRODUCTS rows, same as npl_id above. May
+    -- be NULL for medications resolved only via fass.lookup_name()'s
     -- package-level fallback in routes/lakemedel.py, which has no access to
     -- this field.
     manufacturer        TEXT,

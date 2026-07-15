@@ -128,12 +128,14 @@ def _backfill_medications(db, rows):
     ever needing a live fass.lookup_name() call for catalogue products.
 
     Deliberately does NOT set `form` -- that column means "dosage form"
-    (e.g. "depotplåster") for curated checker.PRODUCTS rows, populated
-    explicitly by seed_products(). There's no reliable way to extract just
-    the dosage form from arbitrary freeform ProductName strings across
-    ~2000 different real medications without fragile per-product parsing,
-    so this leaves `form` unset for catalogue rows rather than guess wrong.
-    package_description ("Påse, 8 x 1 depotplåster") is a separate,
+    (e.g. "depotplåster") and there's no reliable way to extract just the
+    dosage form from arbitrary freeform ProductName strings across ~2000
+    different real medications without fragile per-product parsing, so this
+    leaves `form` unset rather than guess wrong. (seed_products() no longer
+    sets it either -- checker.PRODUCTS is curation-only now, its medications
+    rows start out as plain placeholders like any other product and get
+    their real fields from this same backfill.) package_description ("Påse,
+    8 x 1 depotplåster") is a separate,
     genuinely different piece of information (packaging/pack-size, not
     dosage form) -- a single product commonly has multiple packages short
     at once sharing the exact same product_name (e.g. Estradot 37,5
@@ -173,10 +175,9 @@ def _backfill_medications(db, rows):
             "VALUES (?, ?, ?, ?, ?) "
             "ON CONFLICT(npl_pack_id) DO UPDATE SET name=excluded.name, package_description=excluded.package_description, "
             "npl_id=excluded.npl_id, manufacturer=excluded.manufacturer, "
-            # Clears out `form` for these rows -- only ever reached for
-            # catalogue-only entries (curated rows never match the
-            # is_placeholder/is_our_earlier_backfill_missing_field check
-            # above), so this also self-heals a previous version of this
+            # Clears out `form` for these rows (curated checker.PRODUCTS ids
+            # included -- they're plain placeholders here too, see
+            # seed_products()). Also self-heals a previous version of this
             # function that mistakenly wrote package_description-like text
             # into `form` instead of this dedicated column.
             "form=NULL",

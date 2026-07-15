@@ -4,7 +4,6 @@ from datetime import timedelta
 from flask import Blueprint, render_template, request
 from markupsafe import escape
 
-import checker
 import mail
 from config import SITE_URL, SUBSCRIPTION_TTL_DAYS, token_url
 from db import create_token, get_db, get_medication, get_or_create_token, get_token, utcnow_str
@@ -14,8 +13,12 @@ bp = Blueprint("subscribe", __name__)
 
 
 def _lookup_med_name(npl_pack_id):
-    med_name = next((p["name"] for p in checker.PRODUCTS if p["npl_pack_id"] == npl_pack_id), "")
-    if not med_name and npl_pack_id:
+    """checker.PRODUCTS is curation-only now (no "name" field) -- every
+    medication's display name, curated or catalogue, lives in the
+    medications table. Returns "" for a still-unresolved placeholder row
+    (name == npl_pack_id) same as for a completely unknown id."""
+    med_name = ""
+    if npl_pack_id:
         try:
             with get_db() as db:
                 m = get_medication(db, npl_pack_id)

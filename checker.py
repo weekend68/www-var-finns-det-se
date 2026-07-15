@@ -48,25 +48,26 @@ _consecutive_zeros: dict = {}
 _consecutive_positives: dict = {}
 
 # Single source of truth for the hardcoded "always polled, always on the
-# homepage" medications. seed_products() (called once at startup) writes
-# these into the medications table — no separately-maintained DB seed to
-# drift out of sync (see the Lenzetto bug this replaced).
-#
-# Naming convention: include the pack size in "name" only when a medication
-# has more than one on-market package per strength (ambiguous otherwise, as
-# with Lenzetto's 1×56/3×56 dos). A single-package strength (Estradot,
-# Estrogel) doesn't need it.
+# homepage" medications. This is CURATION-only: which npl_pack_ids are always
+# polled against Fass and shown on the homepage, plus the menopause_related
+# flag (used to build MENOPAUSE_RELATED_IDS below, for the partner-guide
+# link). All display data (name, strength, form, npl_id, manufacturer,
+# package) lives in the medications table like any other catalogue product --
+# seed_products() only guarantees a placeholder row exists here so FK
+# dependents (subscriptions, national_shortages) are always satisfiable, and
+# national_shortages.py's daily catalogue sync (or fass.py's self-healing
+# lookup) fills in the real values, exactly as for any non-curated product.
 PRODUCTS = [
-    {"name": "Estradot 25 mcg depotplåster",         "npl_pack_id": "20040113100574", "npl_id": "20040607005750", "strength": "25 mcg/24 h",   "form": "depotplåster", "menopause_related": True, "manufacturer": "Sandoz A/S"},
-    {"name": "Estradot 37,5 mcg depotplåster",       "npl_pack_id": "20011130100489", "npl_id": "20011130000246", "strength": "37,5 mcg/24 h", "form": "depotplåster", "menopause_related": True, "manufacturer": "Sandoz A/S"},
-    {"name": "Estradot 50 mcg depotplåster",         "npl_pack_id": "20011130100502", "npl_id": "20011130000253", "strength": "50 mcg/24 h",   "form": "depotplåster", "menopause_related": True, "manufacturer": "Sandoz A/S"},
-    {"name": "Estradot 75 mcg depotplåster",         "npl_pack_id": "20011130100526", "npl_id": "20011130000260", "strength": "75 mcg/24 h",   "form": "depotplåster", "menopause_related": True, "manufacturer": "Sandoz A/S"},
-    {"name": "Estradot 100 mcg depotplåster",        "npl_pack_id": "20011130100564", "npl_id": "20011130000277", "strength": "100 mcg/24 h",  "form": "depotplåster", "menopause_related": True, "manufacturer": "Sandoz A/S"},
-    {"name": "Estrogel transdermal gel 0,75 mg/dos", "npl_pack_id": "20181129100025", "npl_id": "20180504000035", "strength": "0,75 mg/dos",   "form": "gel", "menopause_related": True, "manufacturer": "Besins Healthcare"},
-    {"name": "Lenzetto 1,53 mg/dos transdermal spray (1 × 56 dos)", "npl_pack_id": "20140320100036", "npl_id": "20131112000016", "strength": "1,53 mg/dos", "form": "transdermal spray", "menopause_related": True, "manufacturer": "Gedeon Richter Plc"},
-    {"name": "Lenzetto 1,53 mg/dos transdermal spray (3 × 56 dos)", "npl_pack_id": "20160407100353", "npl_id": "20131112000016", "strength": "1,53 mg/dos", "form": "transdermal spray", "menopause_related": True, "manufacturer": "Gedeon Richter Plc"},
-    {"name": "Divigel 0,5 mg gel", "npl_pack_id": "19961001100275", "npl_id": "19961108000041", "strength": "0,5 mg/dos", "form": "gel", "menopause_related": True, "manufacturer": "Orion Corporation"},
-    {"name": "Divigel 1 mg gel",   "npl_pack_id": "20001018100021", "npl_id": "19961108000072", "strength": "1 mg/dos",   "form": "gel", "menopause_related": True, "manufacturer": "Orion Corporation"},
+    {"npl_pack_id": "20040113100574", "menopause_related": True},
+    {"npl_pack_id": "20011130100489", "menopause_related": True},
+    {"npl_pack_id": "20011130100502", "menopause_related": True},
+    {"npl_pack_id": "20011130100526", "menopause_related": True},
+    {"npl_pack_id": "20011130100564", "menopause_related": True},
+    {"npl_pack_id": "20181129100025", "menopause_related": True},
+    {"npl_pack_id": "20140320100036", "menopause_related": True},
+    {"npl_pack_id": "20160407100353", "menopause_related": True},
+    {"npl_pack_id": "19961001100275", "menopause_related": True},
+    {"npl_pack_id": "20001018100021", "menopause_related": True},
 ]
 
 MENOPAUSE_RELATED_IDS = {p["npl_pack_id"] for p in PRODUCTS if p.get("menopause_related")}
@@ -94,21 +95,22 @@ def staleness_tier(timestamp_str):
 
 
 def seed_products():
-    """Ensure every PRODUCTS entry has a matching, up-to-date medications row.
-    Called once at startup, after init_db(). PRODUCTS is the single source of
-    truth here — this always overwrites name/strength/form for these ids, so
-    the DB can never drift out of sync with the hardcoded list."""
+    """Ensure every PRODUCTS entry has a matching medications row -- just a
+    placeholder (name == npl_pack_id) if one doesn't already exist, so
+    foreign-key dependents (subscriptions, national_shortages) are always
+    satisfiable even on a brand new deploy, before the daily catalogue sync
+    (national_shortages.py) or a self-healing lookup has had a chance to fill
+    in the real name/strength/form/npl_id/manufacturer. Called once at
+    startup, after init_db(). Never overwrites an existing row -- unlike
+    before, PRODUCTS is no longer a source of truth for display data."""
     try:
         from db import get_db
         with get_db() as db:
             for p in PRODUCTS:
                 db.execute(
-                    "INSERT INTO medications (npl_pack_id, name, strength, form, npl_id, manufacturer) "
-                    "VALUES (?, ?, ?, ?, ?, ?) "
-                    "ON CONFLICT(npl_pack_id) DO UPDATE SET "
-                    "name=excluded.name, strength=excluded.strength, form=excluded.form, npl_id=excluded.npl_id, "
-                    "manufacturer=excluded.manufacturer",
-                    [p["npl_pack_id"], p["name"], p.get("strength"), p.get("form"), p.get("npl_id"), p.get("manufacturer")],
+                    "INSERT INTO medications (npl_pack_id, name) VALUES (?, ?) "
+                    "ON CONFLICT(npl_pack_id) DO NOTHING",
+                    [p["npl_pack_id"], p["npl_pack_id"]],
                 )
             db.commit()
     except Exception as e:
@@ -120,7 +122,10 @@ state = {
     "last_check": None,
     "next_check": None,
     "polls_done": 0,
-    "products": [{**p, "pharmacies": [], "error": None} for p in PRODUCTS],
+    # Placeholder name (== npl_pack_id) until the first poll cycle enriches
+    # this with the real DB name -- same convention as everywhere else a
+    # medication is displayed before its real name is known/resolved.
+    "products": [{**p, "name": p["npl_pack_id"], "pharmacies": [], "error": None} for p in PRODUCTS],
     # Latest successful poll result for EVERY actively-polled product (hardcoded
     # PRODUCTS + active subscriptions), keyed by npl_pack_id -> {"pharmacies", "checked_at"}.
     # Superset of "products" above, which stays PRODUCTS-only for the curated
@@ -367,6 +372,36 @@ def polling_loop(prev_in_stock):
         subscription_lookup_ok = extra is not None
         extra = extra or []
         all_products = PRODUCTS + extra
+        curated_ids = {p["npl_pack_id"] for p in PRODUCTS}
+
+        # PRODUCTS entries carry curation data only (npl_pack_id +
+        # menopause_related) -- no display name. One combined DB lookup for
+        # ALL actively-polled ids (curated + subscription-only) turns
+        # all_products into enriched dicts carrying "name" from the
+        # medications table, same as any other catalogue product. Falls back
+        # to the raw id if the row is still a name==npl_pack_id placeholder
+        # (e.g. right after a fresh deploy, before the daily catalogue sync
+        # or a self-healing lookup has filled in the real name) -- logging/
+        # notifications below must never crash on this, they'll just show
+        # the raw id for a cycle or two.
+        names_by_id = {}
+        all_ids = [p["npl_pack_id"] for p in all_products]
+        if all_ids:
+            try:
+                from db import get_db
+                placeholders = ",".join("?" for _ in all_ids)
+                with get_db() as db:
+                    rows = db.execute(
+                        f"SELECT npl_pack_id, name FROM medications WHERE npl_pack_id IN ({placeholders})",
+                        all_ids,
+                    ).fetchall()
+                names_by_id = {r["npl_pack_id"]: r["name"] for r in rows}
+            except Exception as e:
+                print(f"  Namnuppslagning fel: {e}")
+        all_products = [
+            {**p, "name": names_by_id.get(p["npl_pack_id"], p["npl_pack_id"])}
+            for p in all_products
+        ]
 
         print(f"\n[{now:%Y-%m-%d %H:%M:%S}] Kollar {len(gln_codes)} apotek, "
               f"{len(PRODUCTS)} fasta + {len(extra)} via prenumeration (parallellt)...")
@@ -397,7 +432,7 @@ def polling_loop(prev_in_stock):
             name = p["name"]
             if error:
                 print(f"  {name}: FEL — {error}")
-                if product in PRODUCTS:
+                if npl_pack_id in curated_ids:
                     updated_products.append({**product, "pharmacies": [], "error": error})
             else:
                 # Populate for ALL actively-polled products (not just the
@@ -441,7 +476,7 @@ def polling_loop(prev_in_stock):
                         prev_in_stock[npl_pack_id] = set()
 
                 print(f"  {name}: {len(pharmacies)} i lager")
-                if product in PRODUCTS:
+                if npl_pack_id in curated_ids:
                     updated_products.append({**product, "pharmacies": pharmacies, "error": None})
 
         notified_ids = {nid for _, _, nid in newly_available}
