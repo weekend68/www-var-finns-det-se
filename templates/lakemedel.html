@@ -172,13 +172,12 @@
       {% if pharmacies %}
       {% macro pharmacy_table(list, limit=20) %}
         <table>
-          <thead><tr><th>Apotek</th><th>Status</th><th>Utbytbar</th></tr></thead>
+          <thead><tr><th>Apotek</th><th>Status</th></tr></thead>
           <tbody>
             {% for ph in list[:limit] %}
             <tr>
               <td>{{ ph.name }}{% if ph.address %} <span style="color:#aaa">— {{ ph.address }}</span>{% endif %}</td>
               <td class="status {{ ph.status | lower }}">{{ macros.pharmacy_status(ph.status) }}</td>
-              <td>{% if ph.exchangeable %}✓{% endif %}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -192,7 +191,6 @@
               <tr>
                 <td>{{ ph.name }}{% if ph.address %} <span style="color:#aaa">— {{ ph.address }}</span>{% endif %}</td>
                 <td class="status {{ ph.status | lower }}">{{ macros.pharmacy_status(ph.status) }}</td>
-                <td>{% if ph.exchangeable %}✓{% endif %}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -246,7 +244,6 @@
         {{ pharmacy_table(pharmacies) }}
       {% endif %}
 
-      <p class="checked-at" style="margin-top:0.5rem">✓ i "Utbytbar"-kolumnen betyder att apoteket kan byta ut varan mot ett likvärdigt läkemedel enligt Läkemedelsverkets utbyteslista.</p>
       {% endif %}
     </div>
 

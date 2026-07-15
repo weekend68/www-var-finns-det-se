@@ -270,13 +270,12 @@
             {% set visible = pharmacies[:show_limit] %}
             {% set hidden  = pharmacies[show_limit:] %}
             <table>
-              <thead><tr><th>Apotek</th><th>Status</th><th>Utbytbar</th></tr></thead>
+              <thead><tr><th>Apotek</th><th>Status</th></tr></thead>
               <tbody>
                 {% for ph in visible %}
                 <tr>
                   <td>{{ ph.name }}</td>
                   <td class="status {{ ph.status | lower }}">{{ macros.pharmacy_status(ph.status) }}</td>
-                  <td>{% if ph.exchangeable %}✓{% endif %}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -290,7 +289,6 @@
                   <tr>
                     <td>{{ ph.name }}</td>
                     <td class="status {{ ph.status | lower }}">{{ macros.pharmacy_status(ph.status) }}</td>
-                    <td>{% if ph.exchangeable %}✓{% endif %}</td>
                   </tr>
                   {% endfor %}
                 </tbody>
