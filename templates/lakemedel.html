@@ -176,7 +176,7 @@
           <tbody>
             {% for ph in list[:limit] %}
             <tr>
-              <td>{{ ph.name }}{% if ph.address %} <span style="color:#aaa">— {{ ph.address }}</span>{% endif %}</td>
+              <td>{{ macros.pharmacy_link(ph) }}</td>
               <td class="status {{ ph.status | lower }}">{{ macros.pharmacy_status(ph.status) }}</td>
             </tr>
             {% endfor %}
@@ -189,7 +189,7 @@
             <tbody>
               {% for ph in list[limit:] %}
               <tr>
-                <td>{{ ph.name }}{% if ph.address %} <span style="color:#aaa">— {{ ph.address }}</span>{% endif %}</td>
+                <td>{{ macros.pharmacy_link(ph) }}</td>
                 <td class="status {{ ph.status | lower }}">{{ macros.pharmacy_status(ph.status) }}</td>
               </tr>
               {% endfor %}

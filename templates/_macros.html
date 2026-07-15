@@ -1,3 +1,13 @@
 {% macro pharmacy_status(status) -%}
 {%- if status == 'IN_STOCK' -%}I lager{%- elif status == 'FEW_IN_STOCK' -%}Få kvar{%- else -%}{{ status }}{%- endif -%}
 {%- endmacro %}
+
+{% macro pharmacy_link(ph, show_address=True) -%}
+{%- if ph.address -%}
+<a href="https://www.openstreetmap.org/search?query={{ (ph.name + ', ' + ph.address) | urlencode }}"
+   target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">{{ ph.name }}</a>
+{%- if show_address %} <span style="color:#aaa">— {{ ph.address }}</span>{% endif -%}
+{%- else -%}
+{{ ph.name }}
+{%- endif -%}
+{%- endmacro %}
