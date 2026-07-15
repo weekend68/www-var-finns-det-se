@@ -8,7 +8,7 @@ import checker
 from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
 from db import get_db, init_db, list_medications_for_sitemap
 from national_shortages import get_shortage_categories
-from slugs import medication_url
+from slugs import category_url, medication_url
 
 SITE_NAME = os.getenv("SITE_NAME", "varfinnsdet.se")
 
@@ -133,7 +133,7 @@ def create_app():
             urls.append(medication_url(SITE_URL, m["npl_pack_id"], m["name"], m["strength"], m["form"]))
         urls.append(f"{SITE_URL}/kategorier")
         for c in categories:
-            urls.append(f"{SITE_URL}/kategori/{c['atc_code']}")
+            urls.append(category_url(SITE_URL, c["atc_code"], c["atc_term"]))
         xml = render_template("sitemap.xml", urls=urls)
         return Response(xml, mimetype="application/xml")
 

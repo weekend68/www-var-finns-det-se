@@ -10,7 +10,7 @@ from config import HISTORY_RELIABLE_SINCE, MIN_CONSECUTIVE_POLLS, SITE_URL, SUBS
 from db import escape_like, get_db, get_medication, is_medication_indexable
 from national_shortages import get_shortage_category
 from pharmacy_grouping import group_pharmacies_by_omrade, normalize_omrade
-from slugs import medication_url, slugify_medication
+from slugs import category_url, medication_url, slugify_medication
 
 bp = Blueprint("lakemedel", __name__)
 
@@ -177,7 +177,11 @@ def _category_breadcrumb(db, npl_pack_id):
     ).fetchone()
     if not row:
         return None
-    return get_shortage_category(db, row["atc_code"])
+    cat = get_shortage_category(db, row["atc_code"])
+    if not cat:
+        return None
+    cat["url"] = category_url(SITE_URL, cat["atc_code"], cat["atc_term"])
+    return cat
 
 
 @bp.route("/lakemedel/<path:id_slug>")

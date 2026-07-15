@@ -56,3 +56,24 @@ def medication_url(site_url, npl_pack_id, name, strength=None, form=None):
     formatting the same "{site_url}/lakemedel/{id}-{slug}" string."""
     slug = slugify_medication(name, strength, form)
     return f"{site_url}/lakemedel/{npl_pack_id}-{slug}"
+
+
+def slugify_category(atc_term_or_code):
+    """
+    Build a cosmetic, SEO-friendly slug for a /kategori/ page from its ATC
+    substance term (e.g. "Atomoxetin"), analogous to slugify_medication()
+    above. Callers should pass the ATC term when available and fall back to
+    the ATC code itself otherwise (get_shortage_category() always has at
+    least one of the two for a qualifying category).
+    """
+    return _to_slug_part(atc_term_or_code or "")
+
+
+def category_url(site_url, atc_code, atc_term):
+    """Absolute canonical /kategori/ deep link -- same pattern as
+    medication_url() above, so app.py's sitemap, routes/kategori.py's own
+    canonical_url and every internal link to a category page all agree by
+    construction instead of independently formatting the same
+    "{site_url}/kategori/{atc_code}-{slug}" string."""
+    slug = slugify_category(atc_term or atc_code)
+    return f"{site_url}/kategori/{atc_code}-{slug}"

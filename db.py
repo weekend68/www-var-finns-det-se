@@ -22,6 +22,15 @@ CREATE TABLE IF NOT EXISTS medications (
     -- what actually distinguishes them. Never guessed/parsed for curated
     -- checker.PRODUCTS rows, which don't need it (one package per entry).
     package_description TEXT,
+    -- Product-level NPL id (distinct id-space from npl_pack_id, which is the
+    -- PACKAGE-level id) -- needed to link out to FASS Patient
+    -- (https://www.fass.se/LIF/product?userType=2&nplId=<npl_id>), which
+    -- only accepts product-level ids. Populated for curated checker.PRODUCTS
+    -- rows via seed_products() and for catalogue rows via
+    -- national_shortages.py's _backfill_medications() (the feed already
+    -- carries npl_id per row). May be NULL for medications resolved only via
+    -- fass.lookup_name()'s package-level fallback in routes/lakemedel.py.
+    npl_id              TEXT,
     created_at          TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -131,6 +140,7 @@ def init_db():
     con = sqlite3.connect(DB_PATH)
     con.executescript(_SCHEMA)
     _migrate_add_column(con, "medications", "package_description", "TEXT")
+    _migrate_add_column(con, "medications", "npl_id", "TEXT")
     con.commit()
     con.close()
 
@@ -217,7 +227,7 @@ def escape_like(s):
 
 def get_medication(db, npl_pack_id):
     return db.execute(
-        "SELECT npl_pack_id, name, strength, form, package_description FROM medications WHERE npl_pack_id=?",
+        "SELECT npl_pack_id, name, strength, form, package_description, npl_id FROM medications WHERE npl_pack_id=?",
         [npl_pack_id],
     ).fetchone()
 

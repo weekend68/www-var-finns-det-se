@@ -141,11 +141,14 @@
   <main>
     <div class="card">
       {% if category %}
-      <a class="category-link" href="/kategori/{{ category.atc_code }}">← Alla {{ category.atc_term or category.atc_code }}-preparat</a>
+      <a class="category-link" href="{{ category.url }}">← Alla {{ category.atc_term or category.atc_code }}-preparat</a>
       {% endif %}
       <h1>{{ med.name }}</h1>
       {% if med.strength or med.form %}
       <p class="subtitle">{{ [med.strength, med.form] | select | join(' · ') }}</p>
+      {% endif %}
+      {% if med.npl_id %}
+      <a class="category-link" style="display:block" href="https://www.fass.se/LIF/product?userType=2&amp;nplId={{ med.npl_id }}" target="_blank" rel="noopener">Läs mer om {{ med.name }} på FASS Patient →</a>
       {% endif %}
       {% if med.package_description %}
       <p class="checked-at">Förpackning: {{ med.package_description }}</p>

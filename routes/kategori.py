@@ -8,21 +8,30 @@ Same informational-only tone as routes/lakemedel.py (see its module-level
 comment) -- no promotional/purchase-inducing language.
 """
 
-from flask import Blueprint, render_template
+import re
+
+from flask import Blueprint, redirect, render_template
 
 from category_editorial import get_editorial
 from config import SITE_URL
 from db import get_db, get_medication
 from national_shortages import get_shortage_categories, get_shortage_category
-from slugs import medication_url
+from slugs import category_url, medication_url, slugify_category
 
 bp = Blueprint("kategori", __name__)
+
+# ATC codes are short alphanumeric strings (typically 5-7 chars, e.g.
+# "N06BA09"), unlike /lakemedel/'s fixed 14-digit npl_pack_id -- same
+# "<id>(-<slug>)?" shape otherwise, see routes/lakemedel.py's _ID_SLUG_RE.
+_ID_SLUG_RE = re.compile(r"^([A-Za-z0-9]{3,8})(?:-(.*))?$")
 
 
 @bp.route("/kategorier")
 def kategorier():
     with get_db() as db:
         categories = get_shortage_categories(db)
+    for c in categories:
+        c["url"] = category_url(SITE_URL, c["atc_code"], c["atc_term"])
     return render_template(
         "kategorier.html",
         categories=categories,
@@ -30,8 +39,8 @@ def kategorier():
     )
 
 
-@bp.route("/kategori/<atc_code>")
-def kategori(atc_code):
+@bp.route("/kategori/<path:id_slug>")
+def kategori(id_slug):
     not_found = render_template(
         "message.html",
         title="Kategorin hittades inte",
@@ -41,10 +50,19 @@ def kategori(atc_code):
         cta_text="Till alla kategorier",
     ), 404
 
+    m = _ID_SLUG_RE.match(id_slug)
+    if not m:
+        return not_found
+    atc_code, given_slug = m.group(1), m.group(2) or ""
+
     with get_db() as db:
         cat = get_shortage_category(db, atc_code)
         if not cat:
             return not_found
+
+        canonical_slug = slugify_category(cat["atc_term"] or atc_code)
+        if given_slug != canonical_slug:
+            return redirect(f"/kategori/{atc_code}-{canonical_slug}", code=301)
 
         # cat["products"] is one row per PACKAGE (npl_pack_id), not per
         # distinct product -- a substance sold in several pack sizes shows up
@@ -82,5 +100,5 @@ def kategori(atc_code):
         products=products,
         title=title,
         intro=intro,
-        canonical_url=f"{SITE_URL}/kategori/{atc_code}",
+        canonical_url=category_url(SITE_URL, atc_code, cat["atc_term"]),
     )

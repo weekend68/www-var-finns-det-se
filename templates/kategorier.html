@@ -81,7 +81,7 @@
       <ul class="cat-list">
         {% for cat in categories %}
         <li class="cat-row">
-          <a href="/kategori/{{ cat.atc_code }}">{{ cat.atc_term or cat.atc_code }}</a>
+          <a href="{{ cat.url }}">{{ cat.atc_term or cat.atc_code }}</a>
           <span class="cat-count">{{ cat.product_count }} produkter</span>
         </li>
         {% endfor %}

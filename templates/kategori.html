@@ -38,6 +38,9 @@
     h1 { font-size: 1.3rem; color: #0D1B2A; margin-bottom: 0.3rem; max-width: 720px; }
     .subtitle { font-size: 0.9rem; color: #777; margin-bottom: 1rem; max-width: 720px; }
     .intro { font-size: 0.9rem; color: #444; line-height: 1.65; margin-bottom: 0.5rem; }
+    .category-link { display: inline-block; font-size: 0.8rem; color: #3D6480;
+                      text-decoration: none; margin-top: 0.4rem; }
+    .category-link:hover { color: #1bb890; text-decoration: underline; }
     .section-heading { font-size: 0.8rem; font-weight: 600; color: #888; text-transform: uppercase;
                         letter-spacing: 0.06em; margin-bottom: 0.6rem; }
     .product-list { list-style: none; }
@@ -77,6 +80,9 @@
       <p class="subtitle">{{ cat.product_count }} produkter i den här gruppen har en registrerad bristsituation just nu.</p>
       {% if intro %}
       <p class="intro">{{ intro }}</p>
+      {% endif %}
+      {% if cat.atc_term %}
+      <a class="category-link" href="https://sv.wikipedia.org/wiki/{{ cat.atc_term | urlencode }}" target="_blank" rel="noopener">Läs mer om {{ cat.atc_term }} på Wikipedia →</a>
       {% endif %}
     </div>
 
