@@ -209,21 +209,11 @@
       </form>
       <script>
       (function () {
-        // Remember the visitor's postnummer in localStorage (client-side only,
-        // never sent to or stored by the server outside this one request) so
-        // they see "Nära dig" automatically on their next medication page,
-        // without retyping it every time.
-        var STORAGE_KEY = 'varfinnsdet_postnummer';
-        var params = new URLSearchParams(window.location.search);
-
-        if (!params.has('omrade')) {
-          var saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            params.set('omrade', saved);
-            window.location.replace(window.location.pathname + '?' + params.toString());
-            return;
-          }
-        }
+        // Remember the visitor's postnummer in a first-party cookie -- NOT
+        // the URL -- so it never ends up in browser history, a copy-pasted
+        // link, or a third-party Referer header. The server reads this
+        // cookie directly (routes/lakemedel.py), no query param needed.
+        var COOKIE_NAME = 'postnummer';
 
         document.getElementById('omrade-form').addEventListener('submit', function (e) {
           e.preventDefault();
@@ -232,15 +222,14 @@
           // this exact raw value in the field, so it never looks truncated
           // back at the visitor.
           var v = document.getElementById('omrade-input').value.replace(/\D/g, '');
-          var url = new URL(window.location.href);
           if (v) {
-            url.searchParams.set('omrade', v);
-            localStorage.setItem(STORAGE_KEY, v);
+            document.cookie = COOKIE_NAME + '=' + encodeURIComponent(v) + '; path=/; max-age=31536000; samesite=Lax';
           } else {
-            url.searchParams.delete('omrade');
-            localStorage.removeItem(STORAGE_KEY);
+            document.cookie = COOKIE_NAME + '=; path=/; max-age=0; samesite=Lax';
           }
-          window.location.href = url.pathname + url.search;
+          // Reload the current path with no query string -- the cookie
+          // alone carries the postnummer from here on.
+          window.location.href = window.location.pathname;
         });
       })();
       </script>
