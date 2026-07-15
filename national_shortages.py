@@ -93,6 +93,13 @@ def _parse(xml_source):
                     "npl_pack_id": pack_id,
                     "npl_id": npl_id,
                     "product_name": product_name,
+                    # A single product (npl_id) commonly has several packages
+                    # in shortage at once (e.g. Estradot 37,5 mikrogram/24
+                    # timmar: 8-pack AND 24-pack, both real, both short) --
+                    # they share the exact same product_name, so without this
+                    # they'd look like indistinguishable duplicates in search
+                    # results and on medications.form. See _backfill_medications.
+                    "package_description": pkg.findtext(_tag("PackageDescription")),
                     "atc_code": atc_code,
                     "atc_term": atc_term,
                     "type_of_shortage": type_of_shortage,
@@ -110,30 +117,51 @@ def _parse(xml_source):
 
 def _backfill_medications(db, rows):
     """Insert a real medications row for any npl_pack_id in `rows` that's
-    missing entirely, or update it if it exists only as a name==npl_pack_id
-    placeholder (e.g. created by routes/lakemedel.py before this catalogue
-    ever knew about it). We already have the real ProductName from this
-    feed, so this deliberately avoids ever needing a live fass.lookup_name()
-    call for catalogue products. Returns the number of rows backfilled."""
+    missing entirely, or update it (name + form) if it exists only as a
+    name==npl_pack_id placeholder, or if an earlier run of this function
+    already set the name but left form unset (see below). We already have
+    the real ProductName/PackageDescription from this feed, so this
+    deliberately avoids ever needing a live fass.lookup_name() call for
+    catalogue products.
+
+    form is set from package_description, NOT derived from product_name --
+    a single product commonly has multiple packages short at the same time
+    sharing the exact same product_name (e.g. "Estradot 37,5 mikrogram/24
+    timmar Depotplåster" covers both an 8-pack and a 24-pack, each its own
+    npl_pack_id) -- package_description ("Påse, 8 x 1 depotplåster" vs
+    "Påse, 24 x 1 depotplåster") is what actually distinguishes them in
+    search results and lets medications.form render consistently with
+    curated checker.PRODUCTS rows instead of one undifferentiated blob.
+    Curated rows always have form populated by seed_products(), so the
+    "form still unset" re-check below only ever matches catalogue-only
+    entries, never touches curated data.
+
+    Returns the number of rows backfilled."""
     pack_ids = [r["npl_pack_id"] for r in rows]
-    existing_names = {}
+    existing = {}
     for i in range(0, len(pack_ids), _SQL_VAR_CHUNK):
         chunk = pack_ids[i:i + _SQL_VAR_CHUNK]
         placeholders = ",".join("?" for _ in chunk)
         for row in db.execute(
-            f"SELECT npl_pack_id, name FROM medications WHERE npl_pack_id IN ({placeholders})", chunk
+            f"SELECT npl_pack_id, name, form FROM medications WHERE npl_pack_id IN ({placeholders})", chunk
         ):
-            existing_names[row["npl_pack_id"]] = row["name"]
+            existing[row["npl_pack_id"]] = (row["name"], row["form"])
 
-    to_backfill = [
-        r for r in rows
-        if r["product_name"] and existing_names.get(r["npl_pack_id"], r["npl_pack_id"]) == r["npl_pack_id"]
-    ]
+    to_backfill = []
+    for r in rows:
+        if not r["product_name"]:
+            continue
+        name, form = existing.get(r["npl_pack_id"], (r["npl_pack_id"], None))
+        is_placeholder = name == r["npl_pack_id"]
+        is_our_earlier_backfill_missing_form = name == r["product_name"] and not form
+        if is_placeholder or is_our_earlier_backfill_missing_form:
+            to_backfill.append(r)
+
     if to_backfill:
         db.executemany(
-            "INSERT INTO medications (npl_pack_id, name) VALUES (?, ?) "
-            "ON CONFLICT(npl_pack_id) DO UPDATE SET name=excluded.name",
-            [(r["npl_pack_id"], r["product_name"]) for r in to_backfill],
+            "INSERT INTO medications (npl_pack_id, name, form) VALUES (?, ?, ?) "
+            "ON CONFLICT(npl_pack_id) DO UPDATE SET name=excluded.name, form=excluded.form",
+            [(r["npl_pack_id"], r["product_name"], r["package_description"]) for r in to_backfill],
         )
     return len(to_backfill)
 
