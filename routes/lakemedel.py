@@ -283,13 +283,6 @@ def lakemedel(id_slug):
 
     canonical_url = medication_url(SITE_URL, npl_pack_id, med["name"], med["strength"], med["form"])
 
-    offer = {"@type": "Offer", "url": canonical_url}
-    if not stock_unknown:
-        if in_stock_now:
-            offer["availability"] = "https://schema.org/LimitedAvailability" if few_only else "https://schema.org/InStock"
-        else:
-            offer["availability"] = "https://schema.org/OutOfStock"
-
     description = f"Lagerstatus och bevakning för {med['name']} på svenska apotek."
 
     jsonld = {
@@ -297,15 +290,25 @@ def lakemedel(id_slug):
         "@type": "Product",
         # Google has no dedicated "Drug" rich-result type (verified against
         # https://developers.google.com/search/docs/appearance/structured-data/search-gallery)
-        # -- switching @type away from Product would lose the Offer/
-        # availability tag in search results for nothing in return. This
-        # additionalType is the hybrid: keep Product (and its availability
-        # support), but also flag the underlying real-world type as a Drug.
+        # -- additionalType flags the underlying real-world type as a Drug
+        # while keeping @type: Product for whatever general understanding
+        # that still buys us with Google/AI crawlers.
+        #
+        # Deliberately NO "offers" field (removed 2026-07-15, previously
+        # just {"@type": "Offer", "url": ..., "availability": ...}) --
+        # Google requires Offer.price once an Offer is present at all
+        # (confirmed against Google's own Product snippet docs), and this
+        # site has no price: nothing is for sale here. Fabricating one to
+        # silence the Rich Results Test's "missing price" error would be
+        # exactly the kind of misrepresentative structured data Google's
+        # own spam policies prohibit -- and gains nothing anyway, since an
+        # Offer without price is invalid either way (no Product/Merchant
+        # rich result was ever honestly achievable without a price or a
+        # review/rating, neither of which apply to a stock checker).
         "additionalType": "https://schema.org/Drug",
         "name": med["name"],
         "sku": npl_pack_id,
         "description": description,
-        "offers": offer,
     }
     if med["manufacturer"]:
         jsonld["brand"] = {"@type": "Brand", "name": med["manufacturer"]}
