@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Minimal, hand-trimmed sample of Läkemedelsverket's real
+  opendata-medicine-shortages-current-3-0.xml feed (same namespace/element
+  shape, verbatim values for the fields national_shortages.py's _parse()
+  actually reads). Trimmed from a real snapshot fetched 2026-07-14.
+  MedicineShortageInformations blocks (not parsed by this app) stripped for
+  brevity, everything _parse() touches kept intact.
+
+  Three cases on purpose:
+  - Estradot 25 mikrogram/24 timmar Depotplåster (20040113100574): one of
+    checker.PRODUCTS' 10 curated ids, ATC G03CA03/Estradiol, active shortage
+    (no ActualEndDate).
+  - Litiumklorid Lidco (20040831100191): an ordinary, non-curated catalog
+    product, different ATC, active shortage.
+  - Bondil (20180608100143): a RESOLVED shortage (has ActualEndDate), to
+    exercise is_active=0.
+-->
+<ns0:OpenDataMedicineShortages xmlns:ns0="http://eservices.lakemedelsverket.se/opendata/medicineshortage/v3/" creationDate="2026-07-14T02:26:43.0343784+02:00">
+  <ns0:MedicineShortage>
+    <ns0:MedicineShortageId>1efc461d-c268-4cf6-a305-d9accb9c2051</ns0:MedicineShortageId>
+    <ns0:TypeOfShortage>SHORTAGE</ns0:TypeOfShortage>
+    <ns0:DateOfFirstNotification>2026-04-10</ns0:DateOfFirstNotification>
+    <ns0:DateOfFirstPublication>2026-04-13</ns0:DateOfFirstPublication>
+    <ns0:LastUpdated>2026-06-26</ns0:LastUpdated>
+    <ns0:MedicinalProducts>
+      <ns0:MedicinalProduct>
+        <ns0:NPLId>20040607005750</ns0:NPLId>
+        <ns0:ProductName>Estradot 25 mikrogram/24 timmar Depotplåster</ns0:ProductName>
+        <ns0:MarketAuthorisationHolderName>Sandoz A/S</ns0:MarketAuthorisationHolderName>
+        <ns0:ActiveSubstances>estradiolhemihydrat</ns0:ActiveSubstances>
+        <ns0:ATC term="Estradiol">G03CA03</ns0:ATC>
+        <ns0:IsParallelImport>false</ns0:IsParallelImport>
+        <ns0:PackagedMedicinalProducts>
+          <ns0:PackagedMedicinalProduct>
+            <ns0:NPLPackId>20040113100574</ns0:NPLPackId>
+            <ns0:Interval>
+              <ns0:ForecastedStartDate>2026-04-13</ns0:ForecastedStartDate>
+              <ns0:ForecastedEndDate>2026-07-29</ns0:ForecastedEndDate>
+              <ns0:Duration nullFlavor="NA" />
+              <ns0:LastUpdated>2026-06-26</ns0:LastUpdated>
+            </ns0:Interval>
+            <ns0:PackageDescription>Påse, 24 x 1 depotplåster</ns0:PackageDescription>
+            <ns0:NordicArticleNumber>180531</ns0:NordicArticleNumber>
+            <ns0:IsParallelDistribution>false</ns0:IsParallelDistribution>
+            <ns0:RiskAssessment nullFlavor="UNK" />
+            <ns0:MedicineShortageInformations />
+          </ns0:PackagedMedicinalProduct>
+        </ns0:PackagedMedicinalProducts>
+      </ns0:MedicinalProduct>
+    </ns0:MedicinalProducts>
+  </ns0:MedicineShortage>
+
+  <ns0:MedicineShortage>
+    <ns0:MedicineShortageId>2a1b3c4d-0000-4cf6-a305-d9accb9c2052</ns0:MedicineShortageId>
+    <ns0:TypeOfShortage>SHORTAGE</ns0:TypeOfShortage>
+    <ns0:DateOfFirstNotification>2020-05-20</ns0:DateOfFirstNotification>
+    <ns0:DateOfFirstPublication>2020-05-28</ns0:DateOfFirstPublication>
+    <ns0:LastUpdated>2026-05-01</ns0:LastUpdated>
+    <ns0:MedicinalProducts>
+      <ns0:MedicinalProduct>
+        <ns0:NPLId>20040916002495</ns0:NPLId>
+        <ns0:ProductName>Litiumklorid Lidco 0,15 mmol/ml Injektionsvätska, lösning</ns0:ProductName>
+        <ns0:MarketAuthorisationHolderName>LiDCO Netherlands BV</ns0:MarketAuthorisationHolderName>
+        <ns0:ActiveSubstances>litiumklorid</ns0:ActiveSubstances>
+        <ns0:ATC term="Litiumklorid">V04CX11</ns0:ATC>
+        <ns0:IsParallelImport>false</ns0:IsParallelImport>
+        <ns0:PackagedMedicinalProducts>
+          <ns0:PackagedMedicinalProduct>
+            <ns0:NPLPackId>20040831100191</ns0:NPLPackId>
+            <ns0:Interval>
+              <ns0:ForecastedStartDate>2020-05-28</ns0:ForecastedStartDate>
+              <ns0:ForecastedEndDate>2028-06-28</ns0:ForecastedEndDate>
+              <ns0:Duration nullFlavor="NA" />
+            </ns0:Interval>
+            <ns0:PackageDescription>Ampull, 5 x 10 ml</ns0:PackageDescription>
+            <ns0:NordicArticleNumber>023120</ns0:NordicArticleNumber>
+            <ns0:IsParallelDistribution>false</ns0:IsParallelDistribution>
+            <ns0:RiskAssessment nullFlavor="UNK" />
+            <ns0:MedicineShortageInformations />
+          </ns0:PackagedMedicinalProduct>
+        </ns0:PackagedMedicinalProducts>
+      </ns0:MedicinalProduct>
+    </ns0:MedicinalProducts>
+  </ns0:MedicineShortage>
+
+  <ns0:MedicineShortage>
+    <ns0:MedicineShortageId>06c05800-a79e-467c-b292-809e6a38ba1c</ns0:MedicineShortageId>
+    <ns0:TypeOfShortage>SHORTAGE</ns0:TypeOfShortage>
+    <ns0:DateOfFirstNotification>2021-10-05</ns0:DateOfFirstNotification>
+    <ns0:DateOfFirstPublication>2021-10-05</ns0:DateOfFirstPublication>
+    <ns0:LastUpdated>2026-05-26</ns0:LastUpdated>
+    <ns0:MedicinalProducts>
+      <ns0:MedicinalProduct>
+        <ns0:NPLId>19980417000054</ns0:NPLId>
+        <ns0:ProductName>Bondil 1000 mikrogram Uretralstift</ns0:ProductName>
+        <ns0:MarketAuthorisationHolderName>Viatris AB</ns0:MarketAuthorisationHolderName>
+        <ns0:ActiveSubstances>alprostadil</ns0:ActiveSubstances>
+        <ns0:ATC term="Alprostadil">G04BE01</ns0:ATC>
+        <ns0:IsParallelImport>false</ns0:IsParallelImport>
+        <ns0:PackagedMedicinalProducts>
+          <ns0:PackagedMedicinalProduct>
+            <ns0:NPLPackId>20180608100143</ns0:NPLPackId>
+            <ns0:Interval>
+              <ns0:ForecastedStartDate>2021-10-04</ns0:ForecastedStartDate>
+              <ns0:ForecastedEndDate>2027-07-01</ns0:ForecastedEndDate>
+              <ns0:ActualEndDate>2026-05-25</ns0:ActualEndDate>
+              <ns0:Duration nullFlavor="NA" />
+              <ns0:LastUpdated>2026-05-25</ns0:LastUpdated>
+            </ns0:Interval>
+            <ns0:PackageDescription>Engångsapplikator i påse, 1 x 10 st</ns0:PackageDescription>
+            <ns0:NordicArticleNumber>530580</ns0:NordicArticleNumber>
+            <ns0:IsParallelDistribution>false</ns0:IsParallelDistribution>
+            <ns0:RiskAssessment nullFlavor="UNK" />
+            <ns0:MedicineShortageInformations />
+          </ns0:PackagedMedicinalProduct>
+        </ns0:PackagedMedicinalProducts>
+      </ns0:MedicinalProduct>
+    </ns0:MedicinalProducts>
+  </ns0:MedicineShortage>
+</ns0:OpenDataMedicineShortages>
