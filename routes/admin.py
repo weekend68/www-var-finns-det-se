@@ -47,9 +47,12 @@ def _polled_at_to_utc_naive(polled_at_str):
 
 def _notification_stats(db):
     """Andel bekräftade prenumerationer som någonsin fått ett notismejl.
-    All-time snapshot (utgångna prenumerationer städas efter 7 dagar, se
-    db.cleanup_expired_subscriptions) -- inte en exakt SLA, men en
-    riktningsvisande siffra på om bevakningsmekanismen faktiskt levererar."""
+    Deliberately ALL-TIME, not "currently active" -- includes subscriptions
+    that have since expired (until db.cleanup_expired_subscriptions() clears
+    them ~7 days later), so `total` here can be a different, usually larger
+    number than active_subscriptions()'s "right now" count. Not an exact
+    SLA, but a directional signal on whether the notification mechanism
+    actually delivers over a subscription's whole lifetime."""
     row = db.execute("""
         SELECT COUNT(*) AS total,
                SUM(CASE WHEN s.last_notified_at IS NOT NULL THEN 1 ELSE 0 END) AS notified
@@ -124,6 +127,33 @@ def _notification_latency(db, sample_size=50):
     }
 
 
+def _signup_funnel(db):
+    """Person-nivå (subscribers, inte subscriptions) tratt: hur många som
+    angav sin mailadress -> hur många av dem som bekräftade den -> hur många
+    av dem som någonsin fått minst en bevakningsnotis. All-time, inte
+    datumavgränsad -- sajten är för ung för att det ska göra praktisk
+    skillnad än, och varje steg räknar ALLA subscribers oavsett deleted_at
+    (soft-delete händer bara efter att en prenumeration redan gått ut, ett
+    senare livscykelsteg som inte ska dölja ett tidigare genomfört steg i
+    tratten).
+
+    Steget före det här (klick på "Bevaka"-knappen) finns bara i Umami
+    ("bevaka-klick"-eventet) -- se caption i admin.html, ingen Umami API-
+    integration byggd än (medveten avgränsning, kräver en egen API-nyckel
+    att sätta upp senare om det blir aktuellt)."""
+    total = db.execute("SELECT COUNT(*) AS n FROM subscribers").fetchone()["n"]
+    confirmed = db.execute(
+        "SELECT COUNT(*) AS n FROM subscribers WHERE confirmed_at IS NOT NULL"
+    ).fetchone()["n"]
+    notified = db.execute("""
+        SELECT COUNT(DISTINCT sub.id) AS n
+        FROM subscribers sub
+        JOIN subscriptions s ON s.subscriber_id = sub.id
+        WHERE s.last_notified_at IS NOT NULL
+    """).fetchone()["n"]
+    return {"total": total, "confirmed": confirmed, "notified": notified}
+
+
 def _most_watched(db, limit=10):
     return db.execute("""
         SELECT s.npl_pack_id, m.name, COUNT(*) AS cnt
@@ -138,22 +168,33 @@ def _most_watched(db, limit=10):
 
 
 def _curated_vs_catalog(db, days=30):
+    """Nya BEKRÄFTADE bevakningar senaste `days` dagarna -- måste filtrera på
+    sub.confirmed_at precis som alla andra "aktuellt läge"-mått här, annars
+    räknas obekräftade signup-försök med och summan blir större än både
+    _notification_stats() total och active_subscriptions, vilket bara
+    förvirrar (upptäckt 2026-07-15: initial version saknade detta filter)."""
     curated_ids = [p["npl_pack_id"] for p in checker.PRODUCTS]
     placeholders = ",".join("?" for _ in curated_ids)
     row = db.execute(f"""
         SELECT
-          SUM(CASE WHEN npl_pack_id IN ({placeholders}) THEN 1 ELSE 0 END) AS curated,
-          SUM(CASE WHEN npl_pack_id NOT IN ({placeholders}) THEN 1 ELSE 0 END) AS catalog
-        FROM subscriptions
-        WHERE created_at >= datetime('now', ?)
+          SUM(CASE WHEN s.npl_pack_id IN ({placeholders}) THEN 1 ELSE 0 END) AS curated,
+          SUM(CASE WHEN s.npl_pack_id NOT IN ({placeholders}) THEN 1 ELSE 0 END) AS catalog
+        FROM subscriptions s
+        JOIN subscribers sub ON s.subscriber_id = sub.id
+        WHERE sub.confirmed_at IS NOT NULL AND sub.deleted_at IS NULL
+          AND s.created_at >= datetime('now', ?)
     """, curated_ids + curated_ids + [f"-{days} days"]).fetchone()
     return {"curated": row["curated"] or 0, "catalog": row["catalog"] or 0}
 
 
 def _weekly_new_subscriptions(db, weeks=8):
+    """Nya BEKRÄFTADE bevakningar per vecka -- samma confirmed_at-filter som
+    _curated_vs_catalog(), av samma skäl."""
     rows = db.execute("""
-        SELECT strftime('%Y-W%W', created_at) AS week, COUNT(*) AS cnt
-        FROM subscriptions
+        SELECT strftime('%Y-W%W', s.created_at) AS week, COUNT(*) AS cnt
+        FROM subscriptions s
+        JOIN subscribers sub ON s.subscriber_id = sub.id
+        WHERE sub.confirmed_at IS NOT NULL AND sub.deleted_at IS NULL
         GROUP BY week
         ORDER BY week DESC
         LIMIT ?
@@ -164,6 +205,7 @@ def _weekly_new_subscriptions(db, weeks=8):
 @bp.route("/admin")
 def admin():
     with get_db() as db:
+        funnel = _signup_funnel(db)
         notification = _notification_stats(db)
         latency = _notification_latency(db)
         most_watched = _most_watched(db)
@@ -172,12 +214,23 @@ def admin():
         confirmed_subscribers = db.execute(
             "SELECT COUNT(*) AS n FROM subscribers WHERE confirmed_at IS NOT NULL AND deleted_at IS NULL"
         ).fetchone()["n"]
-        active_subscriptions = db.execute(
-            "SELECT COUNT(*) AS n FROM subscriptions WHERE active=1 AND expires_at > datetime('now')"
-        ).fetchone()["n"]
+        # Must join subscribers and filter confirmed_at/deleted_at here too --
+        # a subscriptions row is created immediately at signup (routes/
+        # subscribe.py), before the double opt-in confirmation, so without
+        # this filter an unconfirmed pending signup would count as an
+        # "active bevakning" even though it can never actually receive a
+        # notification (see checker.py's _notify_subscribers(), which
+        # requires the exact same three conditions to even consider sending).
+        active_subscriptions = db.execute("""
+            SELECT COUNT(*) AS n FROM subscriptions s
+            JOIN subscribers sub ON s.subscriber_id = sub.id
+            WHERE s.active=1 AND s.expires_at > datetime('now')
+              AND sub.confirmed_at IS NOT NULL AND sub.deleted_at IS NULL
+        """).fetchone()["n"]
 
     return render_template(
         "admin.html",
+        funnel=funnel,
         notification=notification,
         latency=latency,
         most_watched=most_watched,

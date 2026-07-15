@@ -32,6 +32,7 @@
     th { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 2px solid #eee; color: #888; font-weight: 600; }
     td { padding: 0.3rem 0.5rem; border-bottom: 1px solid #f0f0f0; }
     .empty { color: #999; font-style: italic; font-size: 0.88rem; }
+    .caption { font-size: 0.78rem; color: #999; margin-top: 0.75rem; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -41,6 +42,35 @@
   </header>
 
   <main>
+    <div class="card">
+      <h2>Tratt: från intresse till notis</h2>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="value">—</div>
+          <div class="label">Klickat "Bevaka" (se Umami)</div>
+        </div>
+        <div class="stat">
+          <div class="value">{{ funnel.total }}</div>
+          <div class="label">Angett mailadress</div>
+        </div>
+        <div class="stat">
+          <div class="value">{{ funnel.confirmed }}</div>
+          <div class="label">Bekräftat mailadress</div>
+        </div>
+        <div class="stat">
+          <div class="value">{{ funnel.notified }}</div>
+          <div class="label">Fått minst en notis</div>
+        </div>
+      </div>
+      <p class="caption">
+        Person-nivå, all-time. Första steget (klick på "Bevaka"-knappen, innan mailadress
+        anges) spåras bara i Umami — kolla "bevaka-klick"-eventet där för samma period,
+        ingen automatisk hämtning hit än. "Angett mailadress" är en approximation av
+        "fick bekräftelsemejl" — om själva mejlutskicket misslyckas visas ett felmeddelande
+        direkt för besökaren, men det lagras inte separat i databasen.
+      </p>
+    </div>
+
     <div class="card">
       <h2>Sammanfattning</h2>
       <div class="stat-row">
@@ -57,6 +87,11 @@
           <div class="label">Andel med skickad notis ({{ notification.notified }}/{{ notification.total }})</div>
         </div>
       </div>
+      <p class="caption">
+        "Aktiva bevakningar" räknar bara nu-läget (bekräftade, ej utgångna). "Andel med
+        skickad notis" räknar alla bekräftade bevakningar någonsin, inklusive redan
+        utgångna — de två talen mäter olika saker och behöver inte matcha varandra.
+      </p>
     </div>
 
     <div class="card">
