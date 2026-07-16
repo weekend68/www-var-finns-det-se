@@ -571,17 +571,43 @@ def _notify_subscribers(npl_pack_id, medication_name, pharmacies, checked_at):
     since prev_in_stock had already flipped to "seen in stock" and the
     transition (the only thing that used to trigger this function) never
     fires again until the product goes out of stock and back in."""
-    if NOTIFICATIONS_PAUSED:
-        # Temporary kill switch (see module docstring) -- last_notified_at is
-        # left untouched so real subscribers get notified as soon as this is
-        # turned back off, not silently skipped.
-        return
-
     try:
         import mail
         from db import get_db, get_medication, get_or_create_token, utcnow_str
         from slugs import medication_url as build_medication_url
     except ImportError:
+        return
+
+    if NOTIFICATIONS_PAUSED:
+        # Temporary kill switch (see module docstring). The state machine
+        # above (prev_in_stock/_consecutive_*) keeps running regardless of
+        # this flag, so every poll cycle re-qualifies the same "due"
+        # subscribers -- if we just skip the send and leave last_notified_at
+        # untouched, they all pile up and blast out as one burst the moment
+        # this is flipped back off (this happened for real the last time
+        # this switch was toggled). Consume the due notification instead --
+        # stamp last_notified_at now, without sending -- so nothing
+        # accumulates. This does mean a genuine restock during the pause
+        # window goes unnotified, which is the intended trade-off while
+        # sends are paused.
+        try:
+            cooldown_cutoff = utcnow_str(timedelta(hours=-NOTIFY_COOLDOWN_HOURS))
+            with get_db() as db:
+                db.execute("""
+                    UPDATE subscriptions SET last_notified_at = datetime('now')
+                    WHERE id IN (
+                        SELECT s.id
+                        FROM subscriptions s
+                        JOIN subscribers sub ON s.subscriber_id = sub.id
+                        WHERE s.npl_pack_id = ? AND s.active = 1
+                          AND sub.confirmed_at IS NOT NULL AND sub.deleted_at IS NULL
+                          AND s.expires_at > datetime('now')
+                          AND (s.last_notified_at IS NULL OR s.last_notified_at < ?)
+                    )
+                """, [npl_pack_id, cooldown_cutoff])
+                db.commit()
+        except Exception as e:
+            print(f"  _notify_subscribers (pausad, konsumerar) fel: {e}")
         return
 
     try:
