@@ -44,6 +44,8 @@ Prenumerationer förlängs med 30 dagar via en länk i påminnelsemejlet som ski
 - Apotekslistan kan filtreras på postnummer/närhet ("Nära dig" / "I regionen" / "Övriga apotek i Sverige").
 - Startsidan visar en banner som uppmanar till omladdning när informationen börjar bli gammal (kollas periodiskt via `/healthz` i webbläsaren, inte bara vid sidladdning).
 - På klimakterierelaterade läkemedelssidor och startsidan finns en redaktionell länk till [Partnerguiden.se](https://partnerguiden.se) (samma ägare) — se `checker.MENOPAUSE_RELATED_IDS`.
+- Kategorisidor (`/kategorier`, `/kategori/<atc>-<slug>`) grupperar restnoterade läkemedel per ATC-kod, med en bredare katalog än de hårdkodade PRODUCTS (se `national_shortages.py`).
+- `/admin` är en lösenordsskyddad statistik-dashboard (signup-tratt, notisstatistik, mest bevakade läkemedel) — 404:ar om `ADMIN_PASSWORD` inte är satt.
 
 ---
 
@@ -75,6 +77,11 @@ Polling-loopen körs som en daemon-tråd i samma Gunicorn-process. En worker anv
 ├── mail.py             # Resend-wrapper och e-postmallar
 ├── responses.py        # Delade message.html-svar (t.ex. "ogiltig länk")
 ├── slugs.py            # Slug-generering för /lakemedel/-URL:er
+├── seo.py              # Hjälpfunktioner för titel-taggar/meta-text
+├── faq.py              # Auto-genererad FAQ-text (HTML + FAQPage JSON-LD)
+├── shortage.py         # Restsituationsprognos från Läkemedelsverket (per läkemedel)
+├── national_shortages.py # Bred restnoteringskatalog (alla rapporterade, inte bara PRODUCTS)
+├── category_editorial.py # Manuell redaktionell text per ATC-kod för kategorisidor
 ├── pharmacy_grouping.py # Gruppering av apotek efter postnummer/närhet
 ├── routes/
 │   ├── search.py       # GET /api/search, /api/packages, /api/stock/:id
@@ -83,6 +90,9 @@ Polling-loopen körs som en daemon-tråd i samma Gunicorn-process. En worker anv
 │   ├── extend.py       # GET /extend/:token — förläng 30 dagar
 │   ├── unsubscribe.py  # GET /unsubscribe/:token
 │   ├── lakemedel.py    # GET /lakemedel/:id-slug — läkemedelssida
+│   ├── kategori.py     # GET /kategorier, /kategori/:atc-slug — restnoteringskategorier
+│   ├── admin.py        # GET /admin — lösenordsskyddad statistik-dashboard,
+│   │                   # /admin/poll-log.csv — rå poll_log-export
 │   └── log.py          # GET /log — polling-historik
 ├── templates/          # Jinja2-mallar
 └── static/             # Statiska filer (OG-bild m.m.)
@@ -100,9 +110,11 @@ SQLite på Railway persistent volym (`/data/medicinstatus.db`).
 | `subscribers` | E-postadresser (soft delete) |
 | `subscriptions` | Kopplingen prenumerant ↔ läkemedel, löptid |
 | `tokens` | UUID-tokens för confirm/unsubscribe/manage/extend |
-| `poll_log` | Polling-historik, rullande 2 000 rader |
+| `poll_log` | Polling-historik, tidsbaserad rensning (90 dagar) |
 | `pharmacy_cache` | Apoteksregistret cachat för snabb uppstart |
 | `daily_mail_count` | Daglig e-posträknare mot Resend-gränsen |
+| `national_shortages` | Bred restnoteringskatalog från Läkemedelsverket (kategorisidor) |
+| `national_shortages_meta` | Tidsstämpel för senaste dagliga katalogsynk |
 
 ---
 
@@ -118,6 +130,9 @@ SQLite på Railway persistent volym (`/data/medicinstatus.db`).
 | `POLL_INTERVAL` | Minuter mellan pollningar | `2` |
 | `CACHE_FILE` | Sökväg för tillstånds-cache | `/data/medicinstatus_cache.json` |
 | `DAILY_MAIL_LIMIT` | Max antal mejl/dygn mot Resends gräns | `90` |
+| `NOTIFICATIONS_PAUSED` | Killswitch för restock-notismejl (bekräftelse-/förnyelsemejl opåverkade) | `true` |
+| `ADMIN_USERNAME` | Användarnamn för `/admin`-dashboarden (HTTP Basic Auth) | `admin` |
+| `ADMIN_PASSWORD` | Lösenord för `/admin` — ej satt = routen 404:ar helt | — |
 
 ---
 
