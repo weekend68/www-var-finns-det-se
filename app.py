@@ -152,6 +152,39 @@ def create_app():
             lines.append(f"Sitemap: {SITE_URL}/sitemap.xml")
         return Response("\n".join(lines) + "\n", mimetype="text/plain")
 
+    @app.route("/llms.txt")
+    def llms_txt():
+        url = SITE_URL or ""
+        body = f"""# {SITE_NAME}
+
+> Realtidsbevakning av läkemedelslager på Sveriges apotek. Sök ett restnoterat
+> läkemedel, se aktuell lagerstatus per apotek, och bevaka det gratis för att
+> få e-post så fort det finns i lager igen.
+
+Lagerstatus hämtas löpande från Fass.se (i samarbete med Sveriges
+Apoteksförening). Nationella restnoteringsprognoser kommer från
+Läkemedelsverkets öppna data. Ingen inloggning krävs för att söka eller se
+lagerstatus — endast för att starta en bevakning (e-post, dubbel opt-in).
+
+## Huvudsidor
+
+- [Startsida]({url}/): sök läkemedel, se lagerstatus för de mest bevakade
+- [Bristsituationer per läkemedelsgrupp]({url}/kategorier): restnoterade läkemedel grupperade per ATC-kod/substans
+- [Om tjänsten]({url}/om): vad varfinnsdet.se gör och hur den fungerar
+- [Integritetspolicy]({url}/privacy): vilka uppgifter som sparas vid en bevakning och varför
+
+## Hur en bevakning fungerar
+
+- Sök läkemedlet, välj förpackning, ange e-post — bekräftelsemejl skickas (double opt-in)
+- Så fort läkemedlet är i lager igen skickas ett mejl med vilka apotek som har det
+- Bevakningen löper ut automatiskt efter 30 dagar om den inte förlängs
+
+## Optional
+
+- [Sitemap]({url}/sitemap.xml): fullständig lista över alla läkemedelssidor
+"""
+        return Response(body, mimetype="text/markdown")
+
     @app.route("/sitemap.xml")
     def sitemap_xml():
         with get_db() as db:
