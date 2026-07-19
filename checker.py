@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import fass
-from config import MIN_CONSECUTIVE_POLLS, NOTIFY_COOLDOWN_HOURS, SITE_URL
+from config import MIN_CONSECUTIVE_POLLS, NOTIFY_COOLDOWN_HOURS, POLL_LOG_RETENTION_DAYS, SITE_URL
 from fass import check_stock
 
 TZ = ZoneInfo("Europe/Stockholm")
@@ -770,11 +770,10 @@ def _log_poll(polled_at, all_products, result_map, notified_ids, total_glns):
                     [ts, npl, product["name"], len(pharmacies), total_glns,
                      1 if npl in notified_ids else 0],
                 )
-            # Keep rolling window of 2000 rows
-            db.execute(
-                "DELETE FROM poll_log WHERE id NOT IN "
-                "(SELECT id FROM poll_log ORDER BY id DESC LIMIT 2000)"
-            )
+            # Keep POLL_LOG_RETENTION_DAYS of history -- see config.py for why
+            # this is time-based rather than a row-count cap.
+            cutoff = (polled_at - timedelta(days=POLL_LOG_RETENTION_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
+            db.execute("DELETE FROM poll_log WHERE polled_at < ?", [cutoff])
             db.commit()
     except Exception as e:
         print(f"  Poll-loggfel: {e}")

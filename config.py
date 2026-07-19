@@ -42,6 +42,15 @@ MIN_CONSECUTIVE_POLLS = 2
 # db.utcnow_str()'s space-separated convention) -- "%Y-%m-%dT%H:%M:%S".
 HISTORY_RELIABLE_SINCE = "2026-07-15T01:15:00"
 
+# How long checker.py's _log_poll() keeps poll_log rows before pruning them.
+# Was a flat "keep the last 2000 rows" cap (global, shared across every
+# actively-polled product), which at production's POLL_INTERVAL and product
+# count only retained a few days of history -- far too short to analyze
+# flapping patterns (run lengths, isolated blips) over a meaningful window.
+# Time-based instead of row-count-based so retention doesn't shrink as more
+# products get polled (subscriptions grow the product count over time).
+POLL_LOG_RETENTION_DAYS = 90
+
 # /admin (routes/admin.py) is HTTP Basic Auth-gated by this password. Empty
 # (unset) disables the route entirely (404) rather than serving a login
 # prompt nobody can pass -- a deploy that forgets to set this must fail
