@@ -27,6 +27,7 @@
   <meta name="twitter:description" content="{{ desc }}">
   {% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
   <script type="application/ld+json">{{ jsonld_faq | tojson }}</script>
+  <script type="application/ld+json">{{ jsonld_website | tojson }}</script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;

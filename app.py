@@ -57,6 +57,20 @@ def _template_vars():
         ],
     }
 
+    # Reinforces the sitename signal for Google's search-result title --
+    # og:site_name alone isn't always enough to get "Var finns det?" instead
+    # of the bare domain. No SearchAction here: that requires a URL that
+    # renders an actual HTML results page when {search_term_string} is
+    # substituted in, and this site's search (routes/search.py's /api/search)
+    # only returns JSON for the homepage's client-side widget -- there's no
+    # page-based search results URL to point it at yet.
+    jsonld_website = {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": SITE_NAME,
+        "url": SITE_URL,
+    }
+
     return dict(
         canonical=SITE_URL,
         og_image=og_image,
@@ -70,6 +84,7 @@ def _template_vars():
         snap=snap,
         faq_list=faq_list,
         jsonld_faq=jsonld_faq,
+        jsonld_website=jsonld_website,
     )
 
 
