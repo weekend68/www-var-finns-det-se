@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <title>Så hittar du läkemedel som är slut – jämförelse av tjänster</title>
+  <meta name="description" content="Svårt att hitta din medicin? Vi jämför svenska tjänster som Fass, Varfinnsdet, Medicamento och Apotekskoll för lagerstatus, bevakning och restnoteringar.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="{{ site_url }}/jamforelse-lagerstatustjanster">
+  <meta name="twitter:card"        content="summary">
+  <meta name="twitter:title"       content="Så hittar du läkemedel som är slut – jämförelse av tjänster">
+  <meta name="twitter:description" content="Svårt att hitta din medicin? Vi jämför svenska tjänster som Fass, Varfinnsdet, Medicamento och Apotekskoll för lagerstatus, bevakning och restnoteringar.">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f0f4f8; color: #222;
+           min-height: 100vh; display: flex; flex-direction: column; }
+    .hero {
+      background: #0D1B2A;
+      background-image: radial-gradient(#1E3A52 1px, transparent 1px);
+      background-size: 40px 40px;
+      border-left: 5px solid #22D3A5;
+      padding: 2rem 1.5rem 1.75rem;
+    }
+    .hero-inner { max-width: 720px; }
+    .hero-top { display: flex; align-items: center; justify-content: space-between;
+                flex-wrap: wrap; gap: 0.4rem 1.5rem; margin-bottom: 1rem; }
+    .hero-brand { display: flex; align-items: center; gap: 0.6rem; }
+    .hero-name { font-size: 1.45rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+    .hero-name-main { color: #EEF4F8; }
+    .hero-name-tld  { color: #22D3A5; }
+    .hero-tagline { color: #8CAFC7; font-size: 0.8rem; letter-spacing: 0.06em;
+                    text-transform: uppercase; margin-bottom: 0.9rem; }
+    .hero-desc { color: #A8C8DC; font-size: 0.875rem; line-height: 1.65; }
+    main { flex: 1; padding: 2rem 1.5rem; max-width: 720px; }
+    h1 { font-size: 1.4rem; color: #0D1B2A; margin-bottom: 0.75rem; line-height: 1.3; }
+    h2 { font-size: 1.1rem; color: #0D1B2A; margin: 2rem 0 0.6rem; }
+    h3 { font-size: 0.98rem; color: #0D1B2A; margin: 1.4rem 0 0.4rem; }
+    p, li { font-size: 0.9rem; line-height: 1.7; color: #333; margin-bottom: 0.6rem; }
+    ul { padding-left: 1.25rem; }
+    a { color: #22D3A5; }
+    .updated { font-size: 0.8rem; color: #5B6B70; margin-bottom: 1.2rem; }
+    .transparency-box {
+      background: #EAF7F1; border: 1px solid #BFE3D1; border-radius: 8px;
+      padding: 0.9rem 1.1rem; font-size: 0.85rem; line-height: 1.6; color: #1E4A38;
+      margin-bottom: 1.5rem;
+    }
+    .transparency-box strong { color: #0D1B2A; }
+    .qa-block { margin-bottom: 1rem; }
+    .qa-block p.question { font-weight: 700; color: #0D1B2A; margin-bottom: 0.15rem; }
+    .qa-block p.answer { margin-bottom: 0; }
+    hr.divider { border: none; border-top: 1px solid #D8E0E6; margin: 1.75rem 0; }
+    .table-wrap { overflow-x: auto; margin-bottom: 0.6rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.82rem; min-width: 640px; }
+    th { text-align: left; padding: 0.55rem 0.5rem; border-bottom: 2px solid #D8E0E6;
+         color: #5B6B70; font-weight: 700; font-size: 0.72rem; text-transform: uppercase;
+         letter-spacing: 0.03em; white-space: nowrap; }
+    td { padding: 0.55rem 0.5rem; border-bottom: 1px solid #E5EAEE; vertical-align: top; }
+    .table-legend { font-size: 0.78rem; color: #5B6B70; margin-bottom: 0.4rem; }
+    .service-card {
+      background: #fff; border: 1px solid #D8E0E6; border-radius: 10px;
+      padding: 1rem 1.15rem; margin-bottom: 0.9rem;
+    }
+    .service-card h3 { margin-top: 0; }
+    .service-card .badge {
+      display: inline-block; font-size: 0.7rem; font-weight: 700; color: #22916F;
+      background: #E1F5EC; border-radius: 999px; padding: 0.1rem 0.55rem; margin-left: 0.4rem;
+      vertical-align: middle; text-transform: none;
+    }
+    .service-meta { font-size: 0.8rem; color: #5B6B70; margin-bottom: 0.5rem; }
+    .service-meta span { display: block; }
+    .service-strengths, .service-limits { font-size: 0.85rem; line-height: 1.6; margin-bottom: 0; }
+    .service-strengths strong, .service-limits strong { color: #0D1B2A; }
+    dl.faq dt { font-weight: 700; color: #0D1B2A; margin-top: 1rem; font-size: 0.92rem; }
+    dl.faq dt:first-child { margin-top: 0; }
+    dl.faq dd { font-size: 0.87rem; color: #444; margin: 0.2rem 0 0; line-height: 1.6; }
+    .method-note { font-size: 0.8rem; color: #5B6B70; line-height: 1.65; }
+    .method-note p { font-size: 0.8rem; color: #5B6B70; }
+  </style>
+  {% include "_umami.html" %}
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-top">
+        <div class="hero-brand">
+          <svg width="36" height="16" viewBox="0 0 36 16" aria-hidden="true" style="flex-shrink:0">
+            <rect x="0" y="0" width="36" height="16" rx="8" fill="none" stroke="#22D3A5" stroke-width="1.5"/>
+            <line x1="18" y1="0" x2="18" y2="16" stroke="#22D3A5" stroke-width="1.5"/>
+            <clipPath id="pill-lh"><rect x="0" y="0" width="18" height="16"/></clipPath>
+            <rect x="0" y="0" width="36" height="16" rx="8" fill="#22D3A5" clip-path="url(#pill-lh)"/>
+          </svg>
+          <a href="/" class="hero-name" style="text-decoration:none">
+            <span class="hero-name-main">{{ name_base }}</span><span class="hero-name-tld">{{ name_tld }}</span>
+          </a>
+        </div>
+        {% include "_nav.html" %}
+      </div>
+      <p class="hero-tagline">Guide</p>
+      <p class="hero-desc">
+        En jämförelse av svenska tjänster som visar lagerstatus och restnoteringar för läkemedel.
+      </p>
+    </div>
+  </header>
+  <main>
+    <h1>Så hittar du ett läkemedel som är slut – jämförelse av svenska lagerstatus-tjänster</h1>
+    <p class="updated">Senast uppdaterad: 2026-07-20</p>
+
+    <p>
+      Har du letat efter ett läkemedel som är slut och inte vet var du ska börja? Du är inte
+      ensam. Problemet är bara det att "var du ska börja" beror på vilken fråga du egentligen
+      har – och olika svenska tjänster svarar på olika frågor.
+    </p>
+
+    <div class="transparency-box">
+      <strong>Transparens:</strong> Den här sidan publiceras av Varfinnsdet.se, en av tjänsterna
+      som nämns nedan. Vi har lagt extra vikt vid att beskriva både styrkor och begränsningar hos
+      samtliga tjänster – inklusive vår egen, och vid att vara tydliga med vem som faktiskt står
+      bakom varje tjänst. Hittar du en felaktighet, hör av dig så rättar vi.
+    </div>
+
+    <hr class="divider">
+
+    <h2>Vad vill du göra?</h2>
+
+    <div class="qa-block">
+      <p class="question">Jag vill hitta ett apotek som har läkemedlet idag.</p>
+      <p class="answer">Då passar Fass.se, Varfinnsdet.se, Medicamento.se eller Apotekskoll.se –
+        de visar alla lagerstatus över flera apotek, med lite olika sökupplevelse.</p>
+    </div>
+    <div class="qa-block">
+      <p class="question">Jag vill förstå varför läkemedlet är slut.</p>
+      <p class="answer">Då är Läkemedelsverkets officiella information eller
+        RestnoteradeLakemedel.se rätt ställe – de förklarar orsak och prognos, inte vilket
+        enskilt apotek som har varan kvar just nu.</p>
+    </div>
+    <div class="qa-block">
+      <p class="question">Jag vill få ett mejl när läkemedlet finns igen, utan att kolla manuellt varje dag.</p>
+      <p class="answer">Varfinnsdet.se erbjuder det gratis. Medicamento.se har en liknande
+        funktion i sin betalda Plus-nivå.</p>
+    </div>
+    <div class="qa-block">
+      <p class="question">Jag vill läsa fakta om själva läkemedlet – bipacksedel, utbytbara alternativ.</p>
+      <p class="answer">Fass.se är den etablerade källan för det.</p>
+    </div>
+    <div class="qa-block">
+      <p class="question">Jag vill bara söka i en apotekskedjas sortiment.</p>
+      <p class="answer">Då räcker apotekskedjans egen webbplats – men kom ihåg att den bara
+        söker i sin egen katalog, inte alla apotek i hela landet.</p>
+    </div>
+
+    <hr class="divider">
+
+    <h2>Hur lagerstatus fungerar i Sverige – kort bakgrund</h2>
+    <p>
+      De flesta tjänster ovan bygger, direkt eller indirekt, på samma grunddata:
+      <strong>Fass lagerstatustjänst</strong>, ett samarbete mellan Fass, Sveriges
+      Apoteksförening och apoteken. Det är alltså inte flera separata datainsamlingar – det är
+      i grunden en källa som paketerats på olika sätt för olika användare. Det som skiljer
+      tjänsterna åt är därför inte "vem som vet mest", utan hur de gör informationen sökbar,
+      vem de riktar sig till, vilka extrafunktioner de bygger ovanpå – och hur öppna de är med
+      vem som faktiskt driver dem.
+    </p>
+    <p>
+      Ett undantag är <strong>RestnoteradeLakemedel.se</strong>, som hämtar sin kärndata från
+      Läkemedelsverkets officiella register över restnoteringar – en annan datakälla än
+      apotekens egna lagersaldon.
+    </p>
+
+    <hr class="divider">
+
+    <h2>Jämförelsetabell</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Kriterium</th>
+            <th>Fass.se</th>
+            <th>Varfinnsdet.se</th>
+            <th>Medicamento.se</th>
+            <th>Apotekskoll.se</th>
+            <th>RestnoteradeLakemedel.se</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sök på specifikt läkemedel</td>
+            <td>🟢 Ja</td>
+            <td>🟢 Ja</td>
+            <td>🟢 Ja</td>
+            <td>🟢 Ja</td>
+            <td>🟡 Ja (i restlistan)</td>
+          </tr>
+          <tr>
+            <td>Bevakning/notifiering</td>
+            <td>🔴 Nej</td>
+            <td>🟢 Ja, gratis</td>
+            <td>🟡 Ja, betald Plus-nivå</td>
+            <td>🔴 Nej</td>
+            <td>🟡 Ja, riktad till vårdpersonal</td>
+          </tr>
+          <tr>
+            <td>Data om restnoteringar (orsak/prognos)</td>
+            <td>🟡 Länkar vidare till Läkemedelsverket</td>
+            <td>🟢 Ja, flaggar restnoterat per förpackning</td>
+            <td>🔴 Ej framträdande</td>
+            <td>🔴 Nej, hänvisar vidare</td>
+            <td>🟢 Ja – kärnfunktionen (orsak, prognos, ATC-kod)</td>
+          </tr>
+          <tr>
+            <td>Kostnad</td>
+            <td>🟢 Gratis</td>
+            <td>🟢 Gratis</td>
+            <td>🟡 Gratis + betald nivå</td>
+            <td>🟢 Gratis (donationsdriven)</td>
+            <td>🟡 Gratis + kommersiell B2B-del</td>
+          </tr>
+          <tr>
+            <td>Vem driver tjänsten?</td>
+            <td>🟢 LIF, i samarbete med Sveriges Apoteksförening</td>
+            <td>🟢 Vi – se "Om oss"</td>
+            <td>🔴 Ej offentligt angivet</td>
+            <td>🔴 Ej offentligt angivet</td>
+            <td>🟢 AtrimusRx AB, org.nr 559066-0725</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="table-legend">🟢 = ja/fullt uppfyllt · 🟡 = delvis eller med förbehåll · 🔴 = nej / inte tillgängligt / ej angivet.</p>
+    <p class="table-legend">Fler detaljer om varje tjänst – sökfunktioner, kontokrav, historik och restnoteringsdata – hittar du under respektive tjänst nedan.</p>
+    <p class="table-legend">Tabellen baseras på respektive tjänsts egen produktbeskrivning vid tidpunkten för uppdatering ovan. Funktioner kan ha ändrats sedan dess – kontrollera alltid direkt hos tjänsten innan publicering.</p>
+
+    <hr class="divider">
+
+    <h2>Tjänsterna i korthet</h2>
+
+    <div class="service-card">
+      <h3>Fass.se – Lagerstatus på Apotek</h3>
+      <p class="service-meta">Den officiella branschtjänsten, byggd i samarbete mellan Fass, Sveriges Apoteksförening och apoteken själva.</p>
+      <p class="service-meta"><span>Målgrupp: hälso- och sjukvården och allmänheten</span><span>Söker "nära mig"/postnummer: Ja</span><span>Konto krävs: Nej</span><span>Historik över tillgänglighet: Nej</span></p>
+      <p class="service-strengths"><strong>Styrkor:</strong> Extremt pålitlig grunddata, fullständig produktinformation, bipacksedlar och utbytbara alternativ.</p>
+      <p class="service-limits"><strong>Begränsningar:</strong> Visar inte narkotikaklassade läkemedel, tillväxthormon, licensläkemedel eller internetapotekens lager. Ingen bevakningsfunktion. Sökningen kräver att du anger exakt läkemedelsform och styrka i flera steg, vilket är mer omständligt än en enkel fritextsökning.</p>
+    </div>
+
+    <div class="service-card">
+      <h3>Varfinnsdet.se <span class="badge">vår egen tjänst</span></h3>
+      <p class="service-meta">Vi visar lagerstatus per läkemedel över samtliga svenska apotek, flaggar tydligt när något är restnoterat, och låter dig lägga en gratis e-postbevakning.</p>
+      <p class="service-meta"><span>Målgrupp: allmänheten</span><span>Söker "nära mig"/postnummer: Ja</span><span>Konto krävs: Nej (bevakning kräver endast en e-postadress)</span><span>Historik över tillgänglighet: Ja, per läkemedel</span></p>
+      <p class="service-strengths"><strong>Styrkor:</strong> Bred täckning, gratis bevakning, historik per läkemedel.</p>
+      <p class="service-limits"><strong>Begränsningar:</strong> Vi tillhandahåller ingen medicinsk rådgivning, bipacksedlar eller utbytbarhetsdata – för det hänvisar vi till Fass.</p>
+    </div>
+
+    <div class="service-card">
+      <h3>Medicamento.se</h3>
+      <p class="service-meta">Sök- och närhetsbaserad tjänst med data från Fass och Apoteksföreningen.</p>
+      <p class="service-meta"><span>Målgrupp: allmänheten</span><span>Söker "nära mig"/postnummer: Ja</span><span>Konto krävs: Uppgift ej verifierad – kontrollera vid publicering</span><span>Historik över tillgänglighet: Ej framträdande</span></p>
+      <p class="service-strengths"><strong>Styrkor:</strong> Snabb, ren sökupplevelse med "nära mig"-funktion.</p>
+      <p class="service-limits"><strong>Begränsningar:</strong> Bevakning (morgonbevakning via e-post) kräver en betald Plus-nivå. Vi kunde inte hitta uppgift om vilken organisation som driver tjänsten.</p>
+    </div>
+
+    <div class="service-card">
+      <h3>Apotekskoll.se</h3>
+      <p class="service-meta">Enkel, gratis, donationsdriven tjänst utan konton och utan spårningskakor. Lagerstatus hämtas i realtid via Fass.</p>
+      <p class="service-meta"><span>Målgrupp: allmänheten</span><span>Söker "nära mig"/postnummer: Ja</span><span>Konto krävs: Nej</span><span>Historik över tillgänglighet: Nej</span></p>
+      <p class="service-strengths"><strong>Styrkor:</strong> Minimal, snabb, ingen registrering.</p>
+      <p class="service-limits"><strong>Begränsningar:</strong> Ingen bevakningsfunktion. Hänvisar vidare till Fass/1177/Läkemedelsverket vid frågor om restnoteringar. Vi kunde inte hitta uppgift om vilken organisation eller person som driver tjänsten.</p>
+    </div>
+
+    <div class="service-card">
+      <h3>RestnoteradeLakemedel.se</h3>
+      <p class="service-meta">Utgår från Läkemedelsverkets officiella lista över restnoterade läkemedel – inte apotekens lagersaldon. Visar orsak, prognostiserat start- och slutdatum, ATC-kod och utbytbara alternativ enligt TLV.</p>
+      <p class="service-meta"><span>Målgrupp: primärt hälso- och sjukvården/apotek</span><span>Söker "nära mig"/postnummer: Nej</span><span>Konto krävs: Nej, förutom för bevakningsfunktionen (arbetsmail/verksamhet)</span><span>Lagerstatus i realtid: Nej – fokus är restnoteringsstatus, inte enskilda apotekslager</span><span>Historik över tillgänglighet: Delvis – publicerings- och uppdateringsdatum, ej apoteksnivå</span></p>
+      <p class="service-strengths"><strong>Styrkor:</strong> Djup, strukturerad restnoteringsdata direkt från myndighetskälla.</p>
+      <p class="service-limits"><strong>Begränsningar:</strong> Visar inte enskilda apotekslager. Drivs av AtrimusRx AB, som på samma sida även säljer licensalternativ till vårdgivare – värt att känna till av transparensskäl. Bevakningsfunktionen riktar sig i första hand till verksamheter, inte privatpersoner.</p>
+    </div>
+
+    <h3>Om restnoteradmedicin.se</h3>
+    <p>
+      Vi har även granskat restnoteradmedicin.se, som också presenterar restnoterade läkemedel.
+      Vid vår genomgång visade sidan exakt samma sammanräkningar (1001 pågående, 163 kommande
+      restnoteringar) som RestnoteradeLakemedel.se, vilket tyder på att den bygger på samma
+      Läkemedelsverket-data snarare än att vara en oberoende tjänst med eget värde. Till
+      skillnad från övriga tjänster på den här sidan går det inte att se vilken organisation
+      som ligger bakom sajten, och den innehöll vid granskningstillfället länkar till
+      orelaterat innehåll utan koppling till läkemedel. Vi väljer därför att inte inkludera den
+      i huvudjämförelsen ovan.
+    </p>
+
+    <hr class="divider">
+
+    <h2>Vanliga missförstånd</h2>
+    <p><strong>"Lagerstatus" betyder inte att läkemedlet garanterat finns kvar när du kommer till apoteket.</strong> Uppgifter kan uppdateras med viss fördröjning, och andra kunder kan hinna före.</p>
+    <p><strong>"Restnoterat" betyder inte att läkemedlet är slut på alla apotek.</strong> Det betyder att tillverkaren eller distributören tillfälligt inte kan leverera – enskilda apotek kan fortfarande ha kvarvarande förpackningar.</p>
+    <p><strong>Ett apotek kan ofta byta ut till ett likvärdigt läkemedel</strong> även om det du sökte efter är restnoterat, förutsatt att det inte är märkt "ej utbytbart".</p>
+
+    <hr class="divider">
+
+    <h2>3 tips när medicinen verkar slut överallt</h2>
+    <ul>
+      <li><strong>Kontakta din läkare om utbyte.</strong> Ofta finns samma verksamma ämne och styrka under ett annat varumärke som inte är restnoterat.</li>
+      <li><strong>Använd en bevakningstjänst.</strong> Delleveranser och returer kan dyka upp när som helst – en automatisk bevakning gör att du slipper missa det.</li>
+      <li><strong>Fråga mindre, fristående apotek direkt.</strong> De är inte alltid lika synliga i de stora kedjornas digitala system.</li>
+    </ul>
+
+    <hr class="divider">
+
+    <h2>Vilken tjänst rekommenderar vi?</h2>
+    <p>Det finns ingen tjänst som är bäst för alla situationer.</p>
+    <p>Vill du hitta ett apotek som har läkemedlet idag fungerar flera av tjänsterna ovan bra – välj den sökupplevelse som passar dig.</p>
+    <p>Vill du slippa söka manuellt varje dag är en gratis bevakningstjänst som Varfinnsdet.se ett bra alternativ.</p>
+    <p>Vill du förstå varför läkemedlet är slut är Läkemedelsverkets information eller RestnoteradeLakemedel.se oftast bäst.</p>
+
+    <hr class="divider">
+
+    <h2>Vanliga frågor</h2>
+    <dl class="faq">
+      <dt>Vad innebär det att ett läkemedel är restnoterat?</dt>
+      <dd>Att tillverkaren eller distributören tillfälligt inte kan leverera det till den svenska marknaden. Det betyder inte automatiskt att det är helt slut överallt – enskilda apotek kan fortfarande ha kvar förpackningar.</dd>
+
+      <dt>Kostar det något att använda dessa tjänster?</dt>
+      <dd>De flesta är kostnadsfria för vanliga sökningar. Vissa, som Medicamento, tar betalt för mer avancerade bevakningsfunktioner, medan Varfinnsdet.se erbjuder e-postbevakning helt gratis.</dd>
+
+      <dt>Är lagerinformationen alltid korrekt?</dt>
+      <dd>Nej. Lagerstatus kan förändras snabbt när många söker samma läkemedel samtidigt. Ingen tjänst kan garantera att varan finns kvar när du kommer till apoteket.</dd>
+
+      <dt>Saknas det någon tjänst i jämförelsen?</dt>
+      <dd>Hör av dig om du känner till en relevant svensk tjänst – guiden uppdateras löpande.</dd>
+    </dl>
+
+    <hr class="divider">
+
+    <h2>Vår metod och ansvarsfriskrivning</h2>
+    <div class="method-note">
+      <p>
+        Jämförelsen bygger på respektive tjänsts egen produktbeskrivning vid tidpunkten för
+        publicering, utifrån kriterierna: om man kan söka på ett specifikt läkemedel, om
+        lagerstatus visas på apoteksnivå, om bevakning erbjuds och till vilken kostnad, om
+        tjänsten hanterar restnoteringar, hur enkel tjänsten är, och om det går att se vem som
+        driver den. Vi uppdaterar sidan löpande när tjänster förändras.
+      </p>
+      <p>
+        Den här sidan är inte medicinsk rådgivning. Vid frågor om din medicinering eller hälsa,
+        vänd dig till läkare, vårdpersonal eller apotek.
+      </p>
+      <p>
+        Varfinnsdet.se drivs av oss och ingår därför i jämförelsen. Vi har beskrivit vår egen
+        tjänst så öppet och sakligt som möjligt.
+      </p>
+    </div>
+  </main>
+</body>
+</html>

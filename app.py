@@ -135,6 +135,13 @@ def create_app():
     def om():
         return render_template("om.html", site_name=SITE_NAME, site_url=SITE_URL)
 
+    @app.route("/jamforelse-lagerstatustjanster")
+    def jamforelse():
+        # Deliberately not linked from _nav.html or sitemap.xml yet -- and
+        # noindex in its own <head> -- until the linking strategy is decided
+        # (see GitHub issue #7). Reachable by direct URL only for now.
+        return render_template("jamforelse.html", site_name=SITE_NAME, site_url=SITE_URL)
+
     @app.route("/robots.txt")
     def robots_txt():
         lines = [
