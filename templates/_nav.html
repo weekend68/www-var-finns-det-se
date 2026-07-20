@@ -8,5 +8,6 @@
   <a href="/"{% if request.path == '/' %} class="is-active"{% endif %}>Hem</a>
   <a href="/kategorier"{% if request.path.startswith('/kategori') %} class="is-active"{% endif %}>Bläddra bristläkemedel</a>
   <a href="/om"{% if request.path == '/om' %} class="is-active"{% endif %}>Om oss</a>
+  <a href="/jamforelse-lagerstatustjanster"{% if request.path == '/jamforelse-lagerstatustjanster' %} class="is-active"{% endif %}>Jämför tjänster</a>
   <a href="/privacy"{% if request.path == '/privacy' %} class="is-active"{% endif %}>Integritet</a>
 </nav>

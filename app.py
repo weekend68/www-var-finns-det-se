@@ -137,9 +137,6 @@ def create_app():
 
     @app.route("/jamforelse-lagerstatustjanster")
     def jamforelse():
-        # Deliberately not linked from _nav.html or sitemap.xml yet -- and
-        # noindex in its own <head> -- until the linking strategy is decided
-        # (see GitHub issue #7). Reachable by direct URL only for now.
         return render_template("jamforelse.html", site_name=SITE_NAME, site_url=SITE_URL)
 
     @app.route("/robots.txt")
@@ -176,6 +173,7 @@ lagerstatus — endast för att starta en bevakning (e-post, dubbel opt-in).
 ## Huvudsidor
 
 - [Startsida]({url}/): sök läkemedel, se lagerstatus för de mest bevakade
+- [Jämförelse av svenska lagerstatus-tjänster]({url}/jamforelse-lagerstatustjanster): hur Varfinnsdet.se, Fass.se, Medicamento.se, Apotekskoll.se och RestnoteradeLakemedel.se skiljer sig åt
 - [Bristsituationer per läkemedelsgrupp]({url}/kategorier): restnoterade läkemedel grupperade per ATC-kod/substans
 - [Om tjänsten]({url}/om): vad varfinnsdet.se gör och hur den fungerar
 - [Integritetspolicy]({url}/privacy): vilka uppgifter som sparas vid en bevakning och varför
@@ -197,7 +195,8 @@ lagerstatus — endast för att starta en bevakning (e-post, dubbel opt-in).
         with get_db() as db:
             meds = list_medications_for_sitemap(db)
             categories = get_shortage_categories(db)
-        urls = [SITE_URL + "/"] if SITE_URL else ["/"]
+        urls = [f"{SITE_URL}/jamforelse-lagerstatustjanster"]
+        urls.append(SITE_URL + "/" if SITE_URL else "/")
         urls.append(f"{SITE_URL}/om")
         for m in meds:
             urls.append(medication_url(SITE_URL, m["npl_pack_id"], m["name"], m["strength"], m["form"]))
