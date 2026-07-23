@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 from flask import Blueprint, Response, abort, render_template, request
 
 import checker
-from config import ADMIN_PASSWORD, ADMIN_USERNAME
+from config import ADMIN_PASSWORD, ADMIN_USERNAME, GLNS_FAILED_RELIABLE_SINCE
 from db import get_db
 
 bp = Blueprint("admin", __name__)
@@ -232,11 +232,19 @@ def _fetch_quality(db, days=14):
     once actually reduces "X/Y apotek kunde inte kollas" coverage failures,
     instead of guessing from scrolling raw logs.
 
+    Only ever looks at rows at/after GLNS_FAILED_RELIABLE_SINCE, same
+    principle as HISTORY_RELIABLE_SINCE in config.py: db.py's migration
+    backfills existing rows with glns_failed=0, which is a schema default,
+    not a real "zero failures that day" measurement -- showing those days
+    would understate the true historical failure rate as if it were
+    already perfect before we ever measured it.
+
     cutoff is computed in poll_log.polled_at's own convention (Stockholm
     local time, see _polled_at_to_utc_naive's docstring above) rather than
     SQLite's UTC date('now') -- comparing a UTC cutoff against local
     timestamps would silently misplace rows near the day boundary."""
-    cutoff = (datetime.now(_STOCKHOLM) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
+    window_start = (datetime.now(_STOCKHOLM) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
+    cutoff = max(window_start, GLNS_FAILED_RELIABLE_SINCE)
     rows = db.execute("""
         SELECT substr(polled_at, 1, 10) AS day,
                COUNT(*) AS n,

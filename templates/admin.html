@@ -186,9 +186,13 @@
       <p class="caption">
         Andel apotek som inte gick att kolla mot Fass (av alla försök den
         dagen, alla bevakade läkemedel). "Med bortfall" = antal
-        produkt/cykel-rader med minst ett misslyckat apotek. Används för att
-        se om <code>STAGGER_SECONDS</code> (tillagd 2026-07-23, sprider ut
-        de parallella Fass-anropen istället för att skjuta iväg alla på en
+        produkt/cykel-rader med minst ett misslyckat apotek. Visar bara dagar
+        från och med 2026-07-23 (då kolumnen tillkom) — äldre rader har
+        <code>glns_failed=0</code> som ett schema-default från migrationen,
+        inte en riktig mätning, och skulle annars ge sken av att bortfallet
+        redan var noll innan vi ens mätte det. Används för att se om
+        <code>STAGGER_SECONDS</code> (tillagd samma dag, sprider ut de
+        parallella Fass-anropen istället för att skjuta iväg alla på en
         gång) faktiskt minskar bortfallet över tid.
       </p>
       {% else %}
