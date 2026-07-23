@@ -13,8 +13,9 @@ import re
 from flask import Blueprint, redirect, render_template
 
 import faq as faq_builder
+from caching import set_cache
 from category_editorial import get_editorial
-from config import SITE_URL
+from config import CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE, SITE_URL
 from db import get_db, get_medication
 from national_shortages import get_shortage_categories, get_shortage_category
 from slugs import category_url, medication_url, slugify_category
@@ -33,11 +34,11 @@ def kategorier():
         categories = get_shortage_categories(db)
     for c in categories:
         c["url"] = category_url(SITE_URL, c["atc_code"], c["atc_term"])
-    return render_template(
+    return set_cache(render_template(
         "kategorier.html",
         categories=categories,
         canonical_url=f"{SITE_URL}/kategorier",
-    )
+    ), CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE)
 
 
 @bp.route("/kategori/<path:id_slug>")
@@ -129,7 +130,7 @@ def kategori(id_slug):
 
     og_image = f"{SITE_URL}/og-image.png" if SITE_URL else ""
 
-    return render_template(
+    return set_cache(render_template(
         "kategori.html",
         cat=cat,
         products=products,
@@ -140,4 +141,4 @@ def kategori(id_slug):
         faq_list=faq_list,
         jsonld_faq=jsonld_faq,
         jsonld_breadcrumb=jsonld_breadcrumb,
-    )
+    ), CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE)

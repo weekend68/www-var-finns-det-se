@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template
 
+from caching import set_cache
+from config import CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE
 from db import get_db
 
 bp = Blueprint("log", __name__)
@@ -35,4 +37,7 @@ def poll_log():
             "delta":       delta,
         })
 
-    return render_template("log.html", cycles=list(cycles.items())[:100])
+    return set_cache(
+        render_template("log.html", cycles=list(cycles.items())[:100]),
+        CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE,
+    )

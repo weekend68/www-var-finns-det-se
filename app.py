@@ -6,7 +6,8 @@ from flask import Flask, render_template, Response
 
 import checker
 import faq as faq_builder
-from config import SITE_URL, SUBSCRIPTION_TTL_DAYS
+from caching import set_cache
+from config import CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE, SITE_URL, SUBSCRIPTION_TTL_DAYS
 from db import get_db, init_db, list_medications_for_sitemap
 from national_shortages import get_shortage_categories
 from seo import truncate_title
@@ -90,6 +91,11 @@ def _template_vars():
 
 def create_app():
     app = Flask(__name__)
+    # Static assets (favicon*, og-image.png) change rarely -- 1 day is safe
+    # and cuts a lot of origin traffic for files that are otherwise
+    # re-fetched on every uncached visit. Applies to both the auto /static/
+    # route and app.send_static_file() below.
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 86400
     app.jinja_env.filters["truncate_title"] = truncate_title
 
     @app.after_request
@@ -117,7 +123,10 @@ def create_app():
     # Core routes
     @app.route("/")
     def index():
-        return render_template("index.html", **_template_vars())
+        return set_cache(
+            render_template("index.html", **_template_vars()),
+            CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE,
+        )
 
     @app.route("/og-image.png")
     def og_image():
@@ -144,15 +153,24 @@ def create_app():
 
     @app.route("/privacy")
     def privacy():
-        return render_template("privacy.html", site_name=SITE_NAME, site_url=SITE_URL, ttl_days=SUBSCRIPTION_TTL_DAYS)
+        return set_cache(
+            render_template("privacy.html", site_name=SITE_NAME, site_url=SITE_URL, ttl_days=SUBSCRIPTION_TTL_DAYS),
+            CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE,
+        )
 
     @app.route("/om")
     def om():
-        return render_template("om.html", site_name=SITE_NAME, site_url=SITE_URL)
+        return set_cache(
+            render_template("om.html", site_name=SITE_NAME, site_url=SITE_URL),
+            CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE,
+        )
 
     @app.route("/jamforelse-lagerstatustjanster")
     def jamforelse():
-        return render_template("jamforelse.html", site_name=SITE_NAME, site_url=SITE_URL)
+        return set_cache(
+            render_template("jamforelse.html", site_name=SITE_NAME, site_url=SITE_URL),
+            CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE,
+        )
 
     @app.route("/robots.txt")
     def robots_txt():
@@ -174,7 +192,7 @@ def create_app():
         ]
         if SITE_URL:
             lines.append(f"Sitemap: {SITE_URL}/sitemap.xml")
-        return Response("\n".join(lines) + "\n", mimetype="text/plain")
+        return set_cache(Response("\n".join(lines) + "\n", mimetype="text/plain"), 3600)
 
     @app.route("/llms.txt")
     def llms_txt():
@@ -208,7 +226,7 @@ lagerstatus — endast för att starta en bevakning (e-post, dubbel opt-in).
 
 - [Sitemap]({url}/sitemap.xml): fullständig lista över alla läkemedelssidor
 """
-        return Response(body, mimetype="text/markdown")
+        return set_cache(Response(body, mimetype="text/markdown"), 3600)
 
     @app.route("/sitemap.xml")
     def sitemap_xml():
@@ -224,7 +242,7 @@ lagerstatus — endast för att starta en bevakning (e-post, dubbel opt-in).
         for c in categories:
             urls.append(category_url(SITE_URL, c["atc_code"], c["atc_term"]))
         xml = render_template("sitemap.xml", urls=urls)
-        return Response(xml, mimetype="application/xml")
+        return set_cache(Response(xml, mimetype="application/xml"), 3600)
 
     # Subscription blueprints
     from routes.subscribe import bp as subscribe_bp

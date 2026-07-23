@@ -7,7 +7,8 @@ import checker
 import faq as faq_builder
 import fass
 import shortage
-from config import HISTORY_RELIABLE_SINCE, MIN_CONSECUTIVE_POLLS, SITE_URL, SUBSCRIPTION_TTL_DAYS
+from caching import set_cache
+from config import CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE, HISTORY_RELIABLE_SINCE, MIN_CONSECUTIVE_POLLS, SITE_URL, SUBSCRIPTION_TTL_DAYS
 from db import escape_like, get_db, get_medication, is_medication_indexable
 from national_shortages import get_shortage_category
 from pharmacy_grouping import group_pharmacies_by_omrade, normalize_omrade
@@ -338,7 +339,7 @@ def lakemedel(id_slug):
 
     og_image = f"{SITE_URL}/og-image.png" if SITE_URL else ""
 
-    return render_template(
+    return set_cache(render_template(
         "lakemedel.html",
         med=med,
         npl_pack_id=npl_pack_id,
@@ -364,4 +365,4 @@ def lakemedel(id_slug):
         jsonld_faq=jsonld_faq,
         jsonld_breadcrumb=jsonld_breadcrumb,
         ttl_days=SUBSCRIPTION_TTL_DAYS,
-    )
+    ), CONTENT_MAX_AGE, CONTENT_STALE_WHILE_REVALIDATE)

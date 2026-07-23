@@ -38,6 +38,15 @@ def _require_auth():
         )
 
 
+@bp.after_request
+def _no_store(response):
+    # Basic-Auth-gated content must never be cached by a shared cache
+    # (Cloudflare) -- a cache hit would serve one admin's authenticated
+    # response to anyone, credentials or not.
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
 def _polled_at_to_utc_naive(polled_at_str):
     """poll_log.polled_at ("%Y-%m-%dT%H:%M:%S") is Europe/Stockholm local
     time with no offset stored -- attach the zone, convert to UTC, then drop

@@ -51,6 +51,17 @@ HISTORY_RELIABLE_SINCE = "2026-07-15T01:15:00"
 # products get polled (subscriptions grow the product count over time).
 POLL_LOG_RETENTION_DAYS = 90
 
+# How long Cloudflare/browsers may cache the public, non-personalized HTML
+# pages (index, om, privacy, jamforelse, lakemedel, kategori*, log) at the
+# edge. Deliberately short relative to POLL_INTERVAL (30 min in production)
+# -- the underlying stock data is never fresher than that anyway, and the
+# homepage's own staleness banner re-checks /healthz client-side regardless
+# of how old the cached HTML is (see templates/index.html). A short cache
+# still meaningfully cuts origin hits from bots/repeat visitors without
+# adding noticeable extra staleness.
+CONTENT_MAX_AGE = 120
+CONTENT_STALE_WHILE_REVALIDATE = 300
+
 # /admin (routes/admin.py) is HTTP Basic Auth-gated by this password. Empty
 # (unset) disables the route entirely (404) rather than serving a login
 # prompt nobody can pass -- a deploy that forgets to set this must fail
