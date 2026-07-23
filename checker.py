@@ -30,6 +30,10 @@ TZ = ZoneInfo("Europe/Stockholm")
 CACHE_FILE = os.getenv("CACHE_FILE", "/data/medicinstatus_cache.json")
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "2")) * 60
 NOTIFICATIONS_PAUSED = os.getenv("NOTIFICATIONS_PAUSED", "true").strip().lower() in ("1", "true", "yes")
+# Delay between submitting each product's check_stock() to the thread pool in
+# polling_loop(), instead of firing all of them at Fass simultaneously. See
+# the ThreadPoolExecutor submission loop below for why.
+STAGGER_SECONDS = float(os.getenv("STAGGER_SECONDS", "1"))
 # A "polled" state["all_stock"] entry is only trustworthy if it was actually
 # refreshed recently -- a product that starts erroring every cycle (e.g. a
 # retired/renamed npl_pack_id) otherwise keeps serving its last successful
@@ -351,7 +355,7 @@ def get_stock_info(npl_pack_id, sample_size=300):
             return {"pharmacies": [], "checked_at": None, "source": "none"}
         sample_glns = list(pharmacy_map.keys())[:sample_size]
         try:
-            pharmacies = check_stock(npl_pack_id, sample_glns, pharmacy_map)
+            pharmacies, _ = check_stock(npl_pack_id, sample_glns, pharmacy_map)
         except Exception:
             if cached:
                 checked_at = datetime.fromtimestamp(cached[0], tz=TZ).strftime("%Y-%m-%d %H:%M")
@@ -416,17 +420,28 @@ def polling_loop(prev_in_stock):
 
         def check_one(product):
             try:
-                pharmacies = check_stock(product["npl_pack_id"], gln_codes, pharmacy_map)
-                return product, pharmacies, None
+                pharmacies, failed_glns = check_stock(product["npl_pack_id"], gln_codes, pharmacy_map)
+                return product, pharmacies, None, failed_glns
             except Exception as e:
-                return product, [], str(e)
+                return product, [], str(e), 0
 
         with ThreadPoolExecutor(max_workers=max(len(all_products), 1)) as executor:
-            future_map = {executor.submit(check_one, p): p for p in all_products}
+            future_map = {}
+            for i, p in enumerate(all_products):
+                # Stagger submission instead of firing every product's check
+                # at Fass simultaneously -- an experiment (2026-07-23) to see
+                # whether that burst of concurrent requests contributes to
+                # the "X/Y apotek kunde inte kollas" coverage failures logged
+                # below, now that poll_log.glns_failed makes the effect
+                # measurable instead of a guess. Cheap and reversible either
+                # way: still fully parallel, just not all starting at once.
+                if i:
+                    time.sleep(STAGGER_SECONDS)
+                future_map[executor.submit(check_one, p)] = p
             result_map = {}
             for future in as_completed(future_map):
-                product, pharmacies, error = future.result()
-                result_map[product["npl_pack_id"]] = (product, pharmacies, error)
+                product, pharmacies, error, failed_glns = future.result()
+                result_map[product["npl_pack_id"]] = (product, pharmacies, error, failed_glns)
 
         newly_available = []
         currently_in_stock = []
@@ -436,7 +451,7 @@ def polling_loop(prev_in_stock):
 
         for product in all_products:
             npl_pack_id = product["npl_pack_id"]
-            p, pharmacies, error = result_map[npl_pack_id]
+            p, pharmacies, error, failed_glns = result_map[npl_pack_id]
             name = p["name"]
             if error:
                 print(f"  {name}: FEL — {error}")
@@ -761,13 +776,13 @@ def _log_poll(polled_at, all_products, result_map, notified_ids, total_glns):
         with get_db() as db:
             for product in all_products:
                 npl = product["npl_pack_id"]
-                _, pharmacies, error = result_map.get(npl, (None, [], None))
+                _, pharmacies, error, failed_glns = result_map.get(npl, (None, [], None, 0))
                 if error:
                     continue
                 db.execute(
                     "INSERT INTO poll_log (polled_at, npl_pack_id, name, pharmacy_count, "
-                    "glns_checked, notified) VALUES (?, ?, ?, ?, ?, ?)",
-                    [ts, npl, product["name"], len(pharmacies), total_glns,
+                    "glns_checked, glns_failed, notified) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    [ts, npl, product["name"], len(pharmacies), total_glns, failed_glns,
                      1 if npl in notified_ids else 0],
                 )
             # Keep POLL_LOG_RETENTION_DAYS of history -- see config.py for why

@@ -261,15 +261,15 @@ def poll_log_csv():
     as the dashboard above is enough; no need for a dedicated export UI."""
     with get_db() as db:
         rows = db.execute("""
-            SELECT polled_at, npl_pack_id, name, pharmacy_count, glns_checked, notified
+            SELECT polled_at, npl_pack_id, name, pharmacy_count, glns_checked, glns_failed, notified
             FROM poll_log ORDER BY polled_at
         """).fetchall()
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["polled_at", "npl_pack_id", "name", "pharmacy_count", "glns_checked", "notified"])
+    writer.writerow(["polled_at", "npl_pack_id", "name", "pharmacy_count", "glns_checked", "glns_failed", "notified"])
     for r in rows:
-        writer.writerow([r["polled_at"], r["npl_pack_id"], r["name"], r["pharmacy_count"], r["glns_checked"], r["notified"]])
+        writer.writerow([r["polled_at"], r["npl_pack_id"], r["name"], r["pharmacy_count"], r["glns_checked"], r["glns_failed"], r["notified"]])
 
     return Response(
         buf.getvalue(), mimetype="text/csv",

@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS poll_log (
     name           TEXT NOT NULL,
     pharmacy_count INTEGER NOT NULL,
     glns_checked   INTEGER NOT NULL DEFAULT 0,
+    glns_failed    INTEGER NOT NULL DEFAULT 0,
     notified       INTEGER NOT NULL DEFAULT 0
 );
 
@@ -165,6 +166,7 @@ def init_db():
     _migrate_add_column(con, "medications", "npl_id", "TEXT")
     _migrate_add_column(con, "medications", "manufacturer", "TEXT")
     _migrate_add_column(con, "medications", "atc_code", "TEXT")
+    _migrate_add_column(con, "poll_log", "glns_failed", "INTEGER NOT NULL DEFAULT 0")
     con.commit()
     con.close()
 

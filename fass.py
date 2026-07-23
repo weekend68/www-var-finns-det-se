@@ -237,8 +237,12 @@ def get_packages(npl_id):
 def check_stock(npl_pack_id, gln_codes, pharmacy_map):
     """
     Check stock for nplPackId across a list of GLN codes.
-    Returns list of in-stock pharmacies:
-      {"name": str, "address": str, "postalcode": str, "gln": str, "status": str, "exchangeable": bool}
+    Returns (pharmacies, failed_glns):
+      pharmacies: list of in-stock pharmacies, each
+        {"name": str, "address": str, "postalcode": str, "gln": str, "status": str, "exchangeable": bool}
+      failed_glns: how many of gln_codes could not be checked after retries
+        -- checker.py's _log_poll() persists this per poll (poll_log.glns_failed)
+        so fetch-quality can be measured/visualized over time, not just logged.
 
     Batches GLN codes in groups of 50. Retries up to 3 times on transient
     errors; 400s are broken into sub-batches of 10 (unknown GLNs).
@@ -299,4 +303,4 @@ def check_stock(npl_pack_id, gln_codes, pharmacy_map):
                 "status": r["stockInformation"],
                 "exchangeable": r.get("exchangeableProductInStock", False),
             })
-    return in_stock
+    return in_stock, failed_glns
