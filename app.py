@@ -144,12 +144,29 @@ def create_app():
             status = checker.state.get("status", "unknown")
             polls_done = checker.state.get("polls_done", 0)
             last_check = checker.state.get("last_check")
+        staleness = checker.staleness_tier(last_check)
+        # "1h" is just the homepage's earliest informational nudge (see
+        # templates/index.html's staleness banner) -- not itself alarm-worthy.
+        # "3h"/"1d" means the whole polling loop has likely stopped running
+        # (crashed/hung), not just one product's confirmation logic lagging
+        # -- last_check is a single global timestamp for the entire cycle,
+        # so this can't detect e.g. one product stuck behind a coverage
+        # threshold while everything else updates fine.
+        #
+        # Plain "ok"/"stale" (not just the staleness tier) plus a matching
+        # HTTP status exist because the external uptime monitor (Better
+        # Stack) can match exact text in the response body but can't do date
+        # arithmetic itself -- staleness must be pre-computed here, not left
+        # for it to infer from last_check.
+        health = "stale" if staleness in ("3h", "1d") else "ok"
+        http_status = 503 if health == "stale" else 200
         return {
             "status": status,
             "polls_done": polls_done,
             "last_check": last_check,
-            "staleness": checker.staleness_tier(last_check),
-        }
+            "staleness": staleness,
+            "health": health,
+        }, http_status
 
     @app.route("/privacy")
     def privacy():
