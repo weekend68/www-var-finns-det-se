@@ -237,21 +237,37 @@ def get_packages(npl_id):
 def check_stock(npl_pack_id, gln_codes, pharmacy_map):
     """
     Check stock for nplPackId across a list of GLN codes.
-    Returns (pharmacies, failed_glns):
+    Returns (pharmacies, failed_glns, blocked):
       pharmacies: list of in-stock pharmacies, each
         {"name": str, "address": str, "postalcode": str, "gln": str, "status": str, "exchangeable": bool}
       failed_glns: how many of gln_codes could not be checked after retries
         -- checker.py's _log_poll() persists this per poll (poll_log.glns_failed)
         so fetch-quality can be measured/visualized over time, not just logged.
+      blocked: True if Fass rejected even a single-GLN probe with a 400 --
+        confirmed (2026-07-24, Metadon 2care4/Abcur) to mean the medication
+        is narcotic-classified ("Narkotikaklass"); Fass's own product page
+        shows "Vi kan inte visa lagerstatus för särskilda läkemedel" for
+        these. This npl_pack_id can never be checked, ever, regardless of
+        retries -- distinct from an ordinary transient/unknown-GLN 400.
 
     Batches GLN codes in groups of 50. Retries up to 3 times on transient
-    errors; 400s are broken into sub-batches of 10 (unknown GLNs).
+    errors. A 400 first triggers a single-GLN probe: if that also 400s, the
+    whole product is blocked and remaining batches are skipped outright
+    (retrying a permanently-blocked product in sub-batches of 10 would burn
+    ~10 wasted requests per batch, every cycle, forever). If the probe
+    succeeds, the 400 was just a few unknown GLNs in this particular batch,
+    handled as before via sub-batches of 10.
     Logs coverage so silent data loss is visible in logs.
     """
     results = []
     failed_glns = 0
+    blocked = False
 
     for i in range(0, len(gln_codes), 50):
+        if blocked:
+            failed_glns += len(gln_codes) - i
+            break
+
         batch = gln_codes[i:i + 50]
         ok = False
 
@@ -263,7 +279,20 @@ def check_stock(npl_pack_id, gln_codes, pharmacy_map):
                 break
             except Exception as e:
                 if getattr(e, "code", None) == 400:
-                    # Some GLNs unknown to Fass — retry in sub-batches of 10
+                    try:
+                        _proxy_post(f"pharmacy/stock/{npl_pack_id}", [batch[0]])
+                        probe_blocked = False
+                    except Exception as probe_e:
+                        probe_blocked = getattr(probe_e, "code", None) == 400
+
+                    if probe_blocked:
+                        blocked = True
+                        failed_glns += len(batch)
+                        ok = True
+                        break
+
+                    # Probe succeeded -- just a few unknown GLNs in this
+                    # batch, not a blocked product. Retry in sub-batches of 10.
                     for j in range(0, len(batch), 10):
                         sub = batch[j:j + 10]
                         sub_ok = False
@@ -286,7 +315,10 @@ def check_stock(npl_pack_id, gln_codes, pharmacy_map):
             failed_glns += len(batch)
         time.sleep(0.2)
 
-    if failed_glns:
+    if blocked:
+        print(f"  {npl_pack_id}: blockerad av Fass (troligen narkotikaklassad) — "
+              f"lagerstatus går aldrig att hämta för det här läkemedlet")
+    elif failed_glns:
         pct = failed_glns / len(gln_codes) * 100
         print(f"  VARNING {npl_pack_id}: {failed_glns}/{len(gln_codes)} "
               f"({pct:.0f}%) apotek kunde inte kollas — siffran är underskattad")
@@ -303,4 +335,4 @@ def check_stock(npl_pack_id, gln_codes, pharmacy_map):
                 "status": r["stockInformation"],
                 "exchangeable": r.get("exchangeableProductInStock", False),
             })
-    return in_stock, failed_glns
+    return in_stock, failed_glns, blocked

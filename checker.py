@@ -326,21 +326,29 @@ def get_stock_info(npl_pack_id, sample_size=300):
        POLL_INTERVAL), used for medications nobody is actively polling yet.
 
     Returns {"pharmacies": [...], "checked_at": "YYYY-MM-DD HH:MM" or None,
-    "source": "polled"|"live_cache"|"live"|"stale"|"none"}. Raises on a live
-    check failure with no usable cache — callers decide how to degrade.
+    "source": "polled"|"live_cache"|"live"|"stale"|"none", "blocked": bool}.
+    "blocked" (only ever True via the "polled" source) means Fass rejects
+    every stock lookup for this npl_pack_id outright (see fass.check_stock's
+    docstring) -- "pharmacies" is always [] in that case, but that's not a
+    confirmed restock/out-of-stock signal like an ordinary empty result.
+    Raises on a live check failure with no usable cache — callers decide how
+    to degrade.
     """
     with state_lock:
         hit = state["all_stock"].get(npl_pack_id)
     if hit is not None and (time.time() - hit.get("checked_ts", 0)) >= STALE_AFTER:
         hit = None
     if hit is not None:
-        return {"pharmacies": hit["pharmacies"], "checked_at": hit["checked_at"], "source": "polled"}
+        return {
+            "pharmacies": hit["pharmacies"], "checked_at": hit["checked_at"],
+            "source": "polled", "blocked": hit.get("blocked", False),
+        }
 
     ttl = POLL_INTERVAL
     cached = _live_stock_cache.get(npl_pack_id)
     if cached and (time.time() - cached[0]) < ttl:
         checked_at = datetime.fromtimestamp(cached[0], tz=TZ).strftime("%Y-%m-%d %H:%M")
-        return {"pharmacies": cached[1], "checked_at": checked_at, "source": "live_cache"}
+        return {"pharmacies": cached[1], "checked_at": checked_at, "source": "live_cache", "blocked": False}
 
     with lock_for(npl_pack_id):
         # Re-check inside the lock — another thread may have just populated it
@@ -348,24 +356,24 @@ def get_stock_info(npl_pack_id, sample_size=300):
         cached = _live_stock_cache.get(npl_pack_id)
         if cached and (time.time() - cached[0]) < ttl:
             checked_at = datetime.fromtimestamp(cached[0], tz=TZ).strftime("%Y-%m-%d %H:%M")
-            return {"pharmacies": cached[1], "checked_at": checked_at, "source": "live_cache"}
+            return {"pharmacies": cached[1], "checked_at": checked_at, "source": "live_cache", "blocked": False}
 
         pharmacy_map = _pharmacy_map
         if not pharmacy_map:
-            return {"pharmacies": [], "checked_at": None, "source": "none"}
+            return {"pharmacies": [], "checked_at": None, "source": "none", "blocked": False}
         sample_glns = list(pharmacy_map.keys())[:sample_size]
         try:
-            pharmacies, _ = check_stock(npl_pack_id, sample_glns, pharmacy_map)
+            pharmacies, _, _ = check_stock(npl_pack_id, sample_glns, pharmacy_map)
         except Exception:
             if cached:
                 checked_at = datetime.fromtimestamp(cached[0], tz=TZ).strftime("%Y-%m-%d %H:%M")
-                return {"pharmacies": cached[1], "checked_at": checked_at, "source": "stale"}
+                return {"pharmacies": cached[1], "checked_at": checked_at, "source": "stale", "blocked": False}
             raise
 
         checked_ts = time.time()
         _live_stock_cache[npl_pack_id] = (checked_ts, pharmacies)
         checked_at = datetime.fromtimestamp(checked_ts, tz=TZ).strftime("%Y-%m-%d %H:%M")
-        return {"pharmacies": pharmacies, "checked_at": checked_at, "source": "live"}
+        return {"pharmacies": pharmacies, "checked_at": checked_at, "source": "live", "blocked": False}
 
 
 def polling_loop(prev_in_stock):
@@ -420,10 +428,10 @@ def polling_loop(prev_in_stock):
 
         def check_one(product):
             try:
-                pharmacies, failed_glns = check_stock(product["npl_pack_id"], gln_codes, pharmacy_map)
-                return product, pharmacies, None, failed_glns
+                pharmacies, failed_glns, blocked = check_stock(product["npl_pack_id"], gln_codes, pharmacy_map)
+                return product, pharmacies, None, failed_glns, blocked
             except Exception as e:
-                return product, [], str(e), 0
+                return product, [], str(e), 0, False
 
         with ThreadPoolExecutor(max_workers=max(len(all_products), 1)) as executor:
             future_map = {}
@@ -440,8 +448,8 @@ def polling_loop(prev_in_stock):
                 future_map[executor.submit(check_one, p)] = p
             result_map = {}
             for future in as_completed(future_map):
-                product, pharmacies, error, failed_glns = future.result()
-                result_map[product["npl_pack_id"]] = (product, pharmacies, error, failed_glns)
+                product, pharmacies, error, failed_glns, blocked = future.result()
+                result_map[product["npl_pack_id"]] = (product, pharmacies, error, failed_glns, blocked)
 
         newly_available = []
         currently_in_stock = []
@@ -451,19 +459,33 @@ def polling_loop(prev_in_stock):
 
         for product in all_products:
             npl_pack_id = product["npl_pack_id"]
-            p, pharmacies, error, failed_glns = result_map[npl_pack_id]
+            p, pharmacies, error, failed_glns, blocked = result_map[npl_pack_id]
             name = p["name"]
             if error:
                 print(f"  {name}: FEL — {error}")
                 if npl_pack_id in curated_ids:
                     updated_products.append({**product, "pharmacies": [], "error": error})
+            elif blocked:
+                # Fass rejects every stock lookup for this npl_pack_id outright
+                # (confirmed 2026-07-24: narcotic-classified "särskilda
+                # läkemedel" -- see fass.check_stock's docstring). pharmacies
+                # is always [] here, but that's not a real signal -- skip the
+                # empty/non-empty state machine entirely so a permanently
+                # blocked product never gets silently confirmed as
+                # "restnoterad" via _consecutive_zeros, which would be wrong.
+                all_stock_updates[npl_pack_id] = {
+                    "pharmacies": [], "checked_at": checked_at_str, "checked_ts": time.time(), "blocked": True,
+                }
+                print(f"  {name}: blockerad av Fass — kan inte bevakas")
+                if npl_pack_id in curated_ids:
+                    updated_products.append({**product, "pharmacies": [], "error": None, "blocked": True})
             else:
                 # Populate for ALL actively-polled products (not just the
                 # hardcoded PRODUCTS), so get_stock_info()'s fast path also
                 # covers subscription-only medications — exactly the ones
                 # that qualify as SEO-indexable, per db.is_medication_indexable.
                 all_stock_updates[npl_pack_id] = {
-                    "pharmacies": pharmacies, "checked_at": checked_at_str, "checked_ts": time.time(),
+                    "pharmacies": pharmacies, "checked_at": checked_at_str, "checked_ts": time.time(), "blocked": False,
                 }
                 current_glns = {ph["name"] for ph in pharmacies}
                 prev_glns = prev_in_stock.get(npl_pack_id)  # None = aldrig sedd, set() = känt restnoterad
@@ -500,7 +522,7 @@ def polling_loop(prev_in_stock):
 
                 print(f"  {name}: {len(pharmacies)} i lager")
                 if npl_pack_id in curated_ids:
-                    updated_products.append({**product, "pharmacies": pharmacies, "error": None})
+                    updated_products.append({**product, "pharmacies": pharmacies, "error": None, "blocked": False})
 
         notified_ids = {nid for _, _, nid in newly_available}
         _log_poll(now, all_products, result_map, notified_ids, len(gln_codes))
@@ -776,14 +798,14 @@ def _log_poll(polled_at, all_products, result_map, notified_ids, total_glns):
         with get_db() as db:
             for product in all_products:
                 npl = product["npl_pack_id"]
-                _, pharmacies, error, failed_glns = result_map.get(npl, (None, [], None, 0))
+                _, pharmacies, error, failed_glns, blocked = result_map.get(npl, (None, [], None, 0, False))
                 if error:
                     continue
                 db.execute(
                     "INSERT INTO poll_log (polled_at, npl_pack_id, name, pharmacy_count, "
-                    "glns_checked, glns_failed, notified) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "glns_checked, glns_failed, blocked, notified) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     [ts, npl, product["name"], len(pharmacies), total_glns, failed_glns,
-                     1 if npl in notified_ids else 0],
+                     1 if blocked else 0, 1 if npl in notified_ids else 0],
                 )
             # Keep POLL_LOG_RETENTION_DAYS of history -- see config.py for why
             # this is time-based rather than a row-count cap.

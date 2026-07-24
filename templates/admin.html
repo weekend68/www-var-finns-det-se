@@ -193,8 +193,17 @@
         redan var noll innan vi ens mätte det. Används för att se om
         <code>STAGGER_SECONDS</code> (tillagd samma dag, sprider ut de
         parallella Fass-anropen istället för att skjuta iväg alla på en
-        gång) faktiskt minskar bortfallet över tid.
+        gång) faktiskt minskar bortfallet över tid. Blockerade läkemedel
+        (se nedan) räknas inte in här.
       </p>
+      {% if blocked_products %}
+      <p class="caption" style="margin-top: 0.9rem;">
+        <strong>{{ blocked_products | length }} läkemedel blockerade av Fass</strong>
+        (går aldrig att hämta lagerstatus för, oavsett försök — bekräftat
+        narkotikaklassade produkter):
+        {% for bp in blocked_products %}{{ bp.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+      </p>
+      {% endif %}
       {% else %}
       <p class="empty">Ingen data ännu.</p>
       {% endif %}

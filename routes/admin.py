@@ -242,7 +242,15 @@ def _fetch_quality(db, days=14):
     cutoff is computed in poll_log.polled_at's own convention (Stockholm
     local time, see _polled_at_to_utc_naive's docstring above) rather than
     SQLite's UTC date('now') -- comparing a UTC cutoff against local
-    timestamps would silently misplace rows near the day boundary."""
+    timestamps would silently misplace rows near the day boundary.
+
+    Excludes blocked=1 rows entirely (see fass.check_stock's docstring --
+    confirmed 2026-07-24, narcotic-classified medications Fass permanently
+    refuses to look up). Those aren't a coverage/infra signal at all (they
+    fail 100% forever regardless of stagger or anything else we do), so
+    mixing them into this percentage would permanently inflate it and mask
+    whether real infra changes are helping. See _blocked_products() for a
+    separate count of those."""
     window_start = (datetime.now(_STOCKHOLM) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
     cutoff = max(window_start, GLNS_FAILED_RELIABLE_SINCE)
     rows = db.execute("""
@@ -252,7 +260,7 @@ def _fetch_quality(db, days=14):
                SUM(glns_failed) AS total_failed,
                SUM(glns_checked) AS total_checked
         FROM poll_log
-        WHERE polled_at >= ?
+        WHERE polled_at >= ? AND blocked = 0
         GROUP BY day
         ORDER BY day DESC
     """, [cutoff]).fetchall()
@@ -268,6 +276,21 @@ def _fetch_quality(db, days=14):
     return out
 
 
+def _blocked_products(db, days=14):
+    """Medications Fass permanently refuses to look up (see _fetch_quality's
+    docstring) -- surfaced separately so it's visible on /admin without
+    silently skewing the coverage percentage above."""
+    window_start = (datetime.now(_STOCKHOLM) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
+    cutoff = max(window_start, GLNS_FAILED_RELIABLE_SINCE)
+    return db.execute("""
+        SELECT npl_pack_id, name, MAX(polled_at) AS last_seen
+        FROM poll_log
+        WHERE polled_at >= ? AND blocked = 1
+        GROUP BY npl_pack_id
+        ORDER BY name
+    """, [cutoff]).fetchall()
+
+
 @bp.route("/admin")
 def admin():
     with get_db() as db:
@@ -278,6 +301,7 @@ def admin():
         split = _curated_vs_catalog(db)
         weekly = _weekly_new_subscriptions(db)
         fetch_quality = _fetch_quality(db)
+        blocked_products = _blocked_products(db)
         confirmed_subscribers = db.execute(
             "SELECT COUNT(*) AS n FROM subscribers WHERE confirmed_at IS NOT NULL AND deleted_at IS NULL"
         ).fetchone()["n"]
@@ -304,6 +328,7 @@ def admin():
         split=split,
         weekly=weekly,
         fetch_quality=fetch_quality,
+        blocked_products=blocked_products,
         confirmed_subscribers=confirmed_subscribers,
         active_subscriptions=active_subscriptions,
     )
@@ -318,15 +343,15 @@ def poll_log_csv():
     as the dashboard above is enough; no need for a dedicated export UI."""
     with get_db() as db:
         rows = db.execute("""
-            SELECT polled_at, npl_pack_id, name, pharmacy_count, glns_checked, glns_failed, notified
+            SELECT polled_at, npl_pack_id, name, pharmacy_count, glns_checked, glns_failed, blocked, notified
             FROM poll_log ORDER BY polled_at
         """).fetchall()
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["polled_at", "npl_pack_id", "name", "pharmacy_count", "glns_checked", "glns_failed", "notified"])
+    writer.writerow(["polled_at", "npl_pack_id", "name", "pharmacy_count", "glns_checked", "glns_failed", "blocked", "notified"])
     for r in rows:
-        writer.writerow([r["polled_at"], r["npl_pack_id"], r["name"], r["pharmacy_count"], r["glns_checked"], r["glns_failed"], r["notified"]])
+        writer.writerow([r["polled_at"], r["npl_pack_id"], r["name"], r["pharmacy_count"], r["glns_checked"], r["glns_failed"], r["blocked"], r["notified"]])
 
     return Response(
         buf.getvalue(), mimetype="text/csv",

@@ -173,7 +173,9 @@
       {% endif %}
 
       {% set show_shortage_note = shortage_info and not shortage_info.actual_end %}
-      {% if stock_unknown %}
+      {% if stock_blocked %}
+        <p class="status-line unknown">⚫ Kan inte visa lagerstatus för det här läkemedlet</p>
+      {% elif stock_unknown %}
         <p class="status-line unknown">⚪ Kunde inte kontrollera lagerstatus just nu</p>
       {% elif in_stock_now %}
         {% if few_only %}
@@ -188,7 +190,14 @@
       <p class="checked-at">Kontrollerat: {{ checked_at }}</p>
       {% endif %}
 
+      {% if stock_blocked %}
+      <p class="checked-at">
+        Fass tillåter inte lagerslagning för den här typen av läkemedel, så vi kan
+        aldrig bevaka det åt dig — kontakta ditt apotek direkt istället.
+      </p>
+      {% else %}
       <a class="btn-watch" href="/subscribe?npl={{ npl_pack_id }}">Bevaka det här läkemedlet</a>
+      {% endif %}
 
       {% if pharmacies %}
       {% macro pharmacy_table(list, limit=20) %}
@@ -281,7 +290,9 @@
         {%- else %}
         .
         {%- endif %}
-        {%- if in_stock_now %}
+        {%- if stock_blocked %}
+        Vi kan inte visa lagerstatus för det här läkemedlet.
+        {%- elif in_stock_now %}
         Men just nu finns det ändå hos {{ pharmacies | length }} apotek — se listan ovan.
         {%- elif stock_unknown %}
         Vi kunde inte kontrollera lagerstatus just nu.
@@ -296,7 +307,7 @@
     </div>
     {% endif %}
 
-    {% if history %}
+    {% if history and not stock_blocked %}
     <div class="card">
       <h2 class="section-heading">Historik</h2>
       {% if history.at_least %}

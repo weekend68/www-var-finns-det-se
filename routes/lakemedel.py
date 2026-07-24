@@ -257,7 +257,7 @@ def lakemedel(id_slug):
     try:
         stock = checker.get_stock_info(npl_pack_id)
     except Exception:
-        stock = {"pharmacies": [], "checked_at": None, "source": "none"}
+        stock = {"pharmacies": [], "checked_at": None, "source": "none", "blocked": False}
     pharmacies = stock["pharmacies"]
     # "none" means we genuinely don't know yet (pharmacy register not loaded,
     # or a live check failed with no cache to fall back on) -- must not be
@@ -265,6 +265,11 @@ def lakemedel(id_slug):
     # users/Google a medication is out of stock everywhere when we simply
     # failed to check it.
     stock_unknown = stock.get("source") == "none"
+    # Fass permanently refuses stock lookups for this medication (confirmed
+    # 2026-07-24: narcotic-classified "särskilda läkemedel") -- pharmacies is
+    # always [] here too, but showing "Restnoterat" would be actively wrong,
+    # not just uncertain like stock_unknown. See fass.check_stock's docstring.
+    stock_blocked = stock.get("blocked", False)
     in_stock_now = len(pharmacies) > 0
     few_only = in_stock_now and not any(p["status"] == "IN_STOCK" for p in pharmacies)
 
@@ -352,6 +357,7 @@ def lakemedel(id_slug):
         in_stock_now=in_stock_now,
         few_only=few_only,
         stock_unknown=stock_unknown,
+        stock_blocked=stock_blocked,
         checked_at=stock["checked_at"],
         history=history,
         shortage_info=shortage_info,
